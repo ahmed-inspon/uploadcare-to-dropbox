@@ -4,6 +4,8 @@ var Dropbox = require('dropbox').Dropbox;
 const axios = require('axios');
 const {writeFileSync,readFileSync,unlinkSync} = require('fs');
 const { join } = require('path');
+const dotenv = require('dotenv');
+dotenv.config();
 const app = express();
 app.use(bodyparser.json());
 
@@ -30,7 +32,7 @@ let sample = {
     },
     "file": "https://ucarecdn.com/d9b26444-3cf4-408d-9211-be299f41dccc/inbound8868601096635665276.jpg"
   }
-var dbx = new Dropbox({ accessToken: 'sl.BnyymilPg6FhOih_wX1EPwA1YPBHWF75V-g7cOz197oE_uRQrPXGGhQW7-dSdxpHHPXgPo8B18fNlbELE0vxZpLrmzqvjeOabvaVK4lNL4htlIQs5dEs3GljYDqH12GHDQ72ipwQr-aZ5cwP81Lj'});
+var dbx = new Dropbox({ accessToken: process.env.DROPBOX_TOKEN});
 app.post('/webhook',async(req,res)=>{
     let {data,file} = req.body;
     console.log("payload---->",data,'<----payload')
