@@ -47,7 +47,7 @@ app.post('/webhook',async(req,res)=>{
     writeFileSync(join(process.cwd(),'temp',file_name),Buffer.from(fileResponse.data),{encoding:'binary'});
     let file_content = readFileSync(join(process.cwd(),'temp',file_name));
     let today = new Date();
-    let path = today.getFullYear()+"/"+today.getMonth();
+    let path = today.getFullYear()+"/"+(today.getMonth()+1);
     dbx.filesUpload({path: "/"+path+"/"+file_name, contents: file_content}).then((res)=>{
         console.log("res",res)
         try{
