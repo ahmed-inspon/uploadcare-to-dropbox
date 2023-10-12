@@ -46,8 +46,9 @@ app.post('/webhook',async(req,res)=>{
     let file_name = file_uuid+"."+ext;
     writeFileSync(join(process.cwd(),'temp',file_name),Buffer.from(fileResponse.data),{encoding:'binary'});
     let file_content = readFileSync(join(process.cwd(),'temp',file_name));
-
-    dbx.filesUpload({path: "/"+file_name, contents: file_content}).then((res)=>{
+    let today = new Date();
+    let path = today.getFullYear()+"/"+today.getMonth();
+    dbx.filesUpload({path: "/"+path+"/"+file_name, contents: file_content}).then((res)=>{
         console.log("res",res)
         try{
           unlinkSync(join(process.cwd(),'temp',file_name));
