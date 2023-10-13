@@ -34,7 +34,6 @@ const get_refresh_token = async ()=>{
   try {
     const response = await axios.request(config);
     let {data} = response;
-    console.log("data",data);
     if(data && data.access_token){
       return data.access_token
     }
@@ -67,7 +66,7 @@ let sample = {
   }
 app.post('/webhook',async(req,res)=>{
     let {data,file} = req.body;
-    console.log("payload---->",data,'<----payload')
+    // console.log("payload---->",data,'<----payload')
     const fileResponse = await axios({
         url: file,
         method: "GET",
@@ -82,7 +81,7 @@ app.post('/webhook',async(req,res)=>{
     let path = today.getFullYear()+"/"+(today.getMonth()+1);
     var dbx = new Dropbox({ accessToken: await get_refresh_token()});
     dbx.filesUpload({path: "/"+path+"/"+file_name, contents: file_content}).then((res)=>{
-        console.log("res",res)
+        console.log("File Upload at",new Date())
         try{
           unlinkSync(join(process.cwd(),'temp',file_name));
         }
