@@ -12,6 +12,39 @@ app.use(bodyparser.json());
 app.get('/',(req,res)=>{
     res.send("hello world");
 })
+
+const get_refresh_token = async ()=>{
+  let data = new FormData();
+  data.append('client_id', process.env.CLIENT_ID);
+  data.append('client_secret', process.env.CLIENT_SECRET);
+  data.append('refresh_token', process.env.REFRESH_TOKEN);
+  data.append('grant_type', 'refresh_token');
+
+  let config = {
+    method: 'post',
+    maxBodyLength: Infinity,
+    url: 'https://api.dropbox.com/oauth2/token',
+    headers: { 
+      'Cookie': 'locale=en; t=96qUVQ_4RiZfwhmL0qvzOvgD', 
+      ...data.getHeaders()
+    },
+    data : data
+  };
+
+  try {
+    const response = await axios.request(config);
+    let {data} = response;
+    console.log("data",data);
+    if(data && data.access_token){
+      return data.access_token
+    }
+  }
+  catch (error) {
+    console.log(error);
+    return null
+  }
+}
+
 let sample = {
     "data": {
       "content_info": { mime: [Object], image: [Object] },
@@ -32,7 +65,6 @@ let sample = {
     },
     "file": "https://ucarecdn.com/d9b26444-3cf4-408d-9211-be299f41dccc/inbound8868601096635665276.jpg"
   }
-var dbx = new Dropbox({ accessToken: process.env.DROPBOX_TOKEN});
 app.post('/webhook',async(req,res)=>{
     let {data,file} = req.body;
     console.log("payload---->",data,'<----payload')
@@ -48,6 +80,7 @@ app.post('/webhook',async(req,res)=>{
     let file_content = readFileSync(join(process.cwd(),'temp',file_name));
     let today = new Date();
     let path = today.getFullYear()+"/"+(today.getMonth()+1);
+    var dbx = new Dropbox({ accessToken: await get_refresh_token()});
     dbx.filesUpload({path: "/"+path+"/"+file_name, contents: file_content}).then((res)=>{
         console.log("res",res)
         try{
