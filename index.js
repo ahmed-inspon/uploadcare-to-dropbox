@@ -175,11 +175,8 @@ const cronExecution = () =>{
 
 }
 
-const backup_big_files = async(row) =>{
-  const file_name = row.name;
-  const url = row.url;
-  const size = row.size;
-  if(!existsSync(join(process.cwd(),'temp',file_name))){
+const file_download = async (file_name,url) =>{
+  return await new Promise(async (resolve,rej)=>{
     try {
       const fileResponse = await axios({
         url: url,
@@ -190,9 +187,38 @@ const backup_big_files = async(row) =>{
       });
       writeFileSync(join(process.cwd(),'temp',file_name),Buffer.from(fileResponse.data),{encoding:'binary'});
       console.log("big file created --------------------------------------------------------");
+      resolve();
     } catch (error) {
-      console.error("big file error---->",error?.response,"<----big file error")
+      if(error.status != 200){
+        try {
+          console.log("fetching through uploadly------------------------")
+          const fileResponse = await axios({
+            url: "https://uploadly-files.com/"+file_name,
+            method: "GET",
+            responseType: "arraybuffer",
+            maxContentLength: Infinity,
+            maxBodyLength: Infinity
+          });
+          writeFileSync(join(process.cwd(),'temp',file_name),Buffer.from(fileResponse.data),{encoding:'binary'});
+          console.log("big file created --------------------------------------------------------");
+          resolve();
+        } catch (error) {
+          if(error.status == 400){
+            console.error("big file error---->",error?.response,"<----big file error")
+            
+          }
+        }
+      }
     }
+  })
+}
+
+const backup_big_files = async(row) =>{
+  const file_name = row.name;
+  const url = row.url;
+  const size = row.size;
+  if(!existsSync(join(process.cwd(),'temp',file_name))){
+    await file_download(file_name,url)
   }
 }
 
