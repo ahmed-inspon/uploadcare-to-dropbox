@@ -175,43 +175,45 @@ const cronExecution = () =>{
 
 }
 
-const file_download = async (file_name,url) =>{
-  return await new Promise(async (resolve,rej)=>{
-    try {
-      const fileResponse = await axios({
-        url: url,
-        method: "GET",
-        responseType: "arraybuffer",
-        maxContentLength: Infinity,
-        maxBodyLength: Infinity
-      });
-      writeFileSync(join(process.cwd(),'temp',file_name),Buffer.from(fileResponse.data),{encoding:'binary'});
-      console.log("big file created --------------------------------------------------------");
-      resolve();
-    } catch (error) {
-      if(error.status != 200){
-        try {
-          console.log("fetching through uploadly------------------------")
-          const fileResponse = await axios({
-            url: "https://uploadly-files.com/"+file_name,
-            method: "GET",
-            responseType: "arraybuffer",
-            maxContentLength: Infinity,
-            maxBodyLength: Infinity
-          });
-          writeFileSync(join(process.cwd(),'temp',file_name),Buffer.from(fileResponse.data),{encoding:'binary'});
-          console.log("big file created --------------------------------------------------------");
-          resolve();
-        } catch (error) {
-          if(error.status == 400){
-            console.error("big file error---->",error?.response,"<----big file error")
-            
-          }
+const file_download = async (file_name, url) => {
+  const filePath = join(process.cwd(), 'temp', file_name);
+  
+  try {
+    const response = await axios.get(url, { responseType: 'stream' });
+
+    const writer = createWriteStream(filePath);
+
+    response.data.pipe(writer);
+
+    return new Promise((resolve, reject) => {
+      writer.on('finish', resolve);
+      writer.on('error', reject);
+    });
+  } catch (error) {
+    console.error('Error downloading file:', error);
+    if (error.response && error.response.status === 404) {
+      console.log('Fetching through uploadly------------------------');
+      try {
+        const response = await axios.get(`https://uploadly-files.com/${file_name}`, { responseType: 'stream' });
+
+        const writer = createWriteStream(filePath);
+
+        response.data.pipe(writer);
+
+        return new Promise((resolve, reject) => {
+          writer.on('finish', resolve);
+          writer.on('error', reject);
+        });
+      } catch (error) {
+        if (error.response && error.response.status === 400) {
+          console.error('Big file error:', error.response.data);
+        } else {
+          console.error('Error fetching through uploadly:', error);
         }
       }
     }
-  })
-}
+  }
+};
 
 const backup_big_files = async(row) =>{
   const file_name = row.name;
