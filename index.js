@@ -179,19 +179,19 @@ const backup_big_files = async(row) =>{
   const file_name = row.name;
   const url = row.url;
   const size = row.size;
-  if(!existsSync(join(process.cwd(),'temp',file_name))){
-    try {
-      const fileResponse = await axios({
-        url: url,
-        method: "GET",
-        responseType: "arraybuffer",
-      });
-      writeFileSync(join(process.cwd(),'temp',file_name),Buffer.from(fileResponse.data),{encoding:'binary'});
-      console.log("big file created --------------------------------------------------------");
-    } catch (error) {
-      console.error("big file error---->",error,"<----big file error")
-    }
-  }
+  // if(!existsSync(join(process.cwd(),'temp',file_name))){
+  //   try {
+  //     const fileResponse = await axios({
+  //       url: url,
+  //       method: "GET",
+  //       responseType: "arraybuffer",
+  //     });
+  //     writeFileSync(join(process.cwd(),'temp',file_name),Buffer.from(fileResponse.data),{encoding:'binary'});
+  //     console.log("big file created --------------------------------------------------------");
+  //   } catch (error) {
+  //     console.error("big file error---->",error,"<----big file error")
+  //   }
+  // }
 }
 
 const job = new CronJob(
