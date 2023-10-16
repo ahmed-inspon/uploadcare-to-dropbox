@@ -191,7 +191,7 @@ const backup_big_files = async(row) =>{
       writeFileSync(join(process.cwd(),'temp',file_name),Buffer.from(fileResponse.data),{encoding:'binary'});
       console.log("big file created --------------------------------------------------------");
     } catch (error) {
-      console.error("big file error---->",error,"<----big file error")
+      console.error("big file error---->",error?.response,"<----big file error")
     }
   }
 }
