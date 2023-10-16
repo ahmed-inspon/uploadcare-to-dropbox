@@ -139,7 +139,7 @@ const cronExecution = () =>{
             let file_content = readFileSync(join(process.cwd(),'temp',file_name));
             let today = new Date();
             let path = today.getFullYear()+"/"+(today.getMonth()+1);
-            await new Promise((res,rej)=>{
+            await new Promise((resolve,rej)=>{
               dbx.filesUpload({path: "/"+path+"/"+file_name, contents: file_content}).then((res)=>{
                 console.log(file_name," File uploaded at",new Date())
                 try{
@@ -147,15 +147,15 @@ const cronExecution = () =>{
                   db.run('DELETE FROM files WHERE id = ?',[row.id],()=>{
                     console.log(file_name," File deleted at",new Date())
                   })
-                  res()
+                  resolve()
                 }
                 catch(err){
                   console.log('err',err,file_name);
-                  res()
+                  resolve()
                 }
               }).catch((err)=>{
                 console.log("dropbox err",err);
-                res()
+                resolve()
               })
             })
           }
