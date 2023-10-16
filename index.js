@@ -15,7 +15,7 @@ let db = new sqlite3.Database('./file.db', (err) => {
   console.log('Connected to database.');
 });
 db.serialize(() => {
-  db.run("CREATE TABLE IF NOT EXISTS files (id INTEGER PRIMARY KEY, name TEXT ,url TEXT, created_at TEXT)");
+  db.run("CREATE TABLE IF NOT EXISTS files (id INTEGER PRIMARY KEY, name TEXT ,size TEXT,url TEXT, created_at TEXT)");
 });
 
 
@@ -84,7 +84,7 @@ app.post('/webhook',async(req,res)=>{
     let file_uuid = data.uuid;
     let ext = data.original_filename.split('.')[data.original_filename.split(".").length-1];
     let file_name = file_uuid+"."+ext;
-    db.run('INSERT INTO files (name,url,created_at) VALUES (?,?,?)', [file_name,file,Date.now()], (err) => {
+    db.run('INSERT INTO files (name,url,size,created_at) VALUES (?,?,?,?)', [file_name,file,data.size,Date.now()], (err) => {
       if (err) {
         console.error(err.message);
       } else {
@@ -122,7 +122,12 @@ const cronExecution = () =>{
             const row = rows[i];
             const file_name = row.name;
             const url = row.url;
-            console.log('File Name:', file_name,url);
+            const size = row.size;
+            if(size > 100000000){
+              console.log("big file----",file_name);
+              continue;
+            }
+            console.log('File Name:', file_name,url,size);
             if(!existsSync(join(process.cwd(),'temp',file_name))){
               try {
                 const fileResponse = await axios({
