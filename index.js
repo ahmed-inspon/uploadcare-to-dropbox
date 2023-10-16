@@ -107,7 +107,7 @@ const cronExecution = () =>{
     }
   
     cron_running = true;
-    db.all('SELECT id,name,url,size,created_at FROM files LIMIT 50', async (err, rows) => {
+    db.all('SELECT id,name,url,size,created_at FROM files LIMIT 200', async (err, rows) => {
       if (err) {
         console.error(err.message);
         cron_running = false;
@@ -124,7 +124,7 @@ const cronExecution = () =>{
             const url = row.url;
             const size = row.size;
             if(size > 100000000){
-              backup_big_files(row);
+              // backup_big_files(row);
               console.log("big file----",file_name);
               continue;
             }
@@ -308,7 +308,7 @@ const upload_big_files = (fileContent,fileSize,file_name,id) =>{
   });
 }
 const job = new CronJob(
-	'* * * * *',
+	'*/5 * * * *',
 	cronExecution,
 	null,
 	true,
