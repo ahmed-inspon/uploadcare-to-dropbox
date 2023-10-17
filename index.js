@@ -301,74 +301,104 @@ const upload_big_files = async (fileContent, fileSize, file_name, id) => {
   return new Promise(async (resolve, reject) => {
     try {
       let dbx = new Dropbox({ accessToken: await get_refresh_token() });
-      const response = await dbx.filesUploadSessionStart({ close: false, contents: '' });
-      const sessionId = response.result.session_id;
-      const chunkSize = 25 * 1024 * 1024;
-      const numChunks = Math.ceil(fileSize / chunkSize);
-
-      let offset = 0;
-
-      const uploadChunk = async (chunkData, currentOffset) => {
-        return dbx.filesUploadSessionAppendV2({
-          cursor: {
-            session_id: sessionId,
-            offset: currentOffset,
-          },
-          close: false,
-          contents: chunkData,
-        });
-      };
-
-      const uploadChunks = async () => {
-        let currentOffset = offset;
-
-        for (let i = 0; i < numChunks; i++) {
-          const start = i * chunkSize;
-          const end = Math.min(fileSize, start + chunkSize);
-          const chunkData = fileContent.slice(start, end);
-
-          console.log("Uploading single chunk", i, start, end);
-          await uploadChunk(chunkData, currentOffset);
-          currentOffset += chunkData.length; // Increment by the actual chunk size
-          console.log(`Uploaded chunk ${i + 1} of ${numChunks}`);
+      let today = new Date();
+      let path = today.getFullYear() + "/" + (today.getMonth() + 1);
+      // Check if the file already exists in Dropbox
+      const checkFileExists = async () => {
+        try {
+          const response = await dbx.filesGetMetadata({ path: "/" + path + "/" + file_name });
+          if (response.result && response.result.id) {
+            console.log("File already exists in Dropbox");
+            resolve("File already exists in Dropbox");
+          } else {
+            console.log("File does not exist in Dropbox, proceeding with the upload");
+            return startUploadSession();
+          }
+        } catch (error) {
+          // If the file doesn't exist, continue with the upload
+          if (error && error.status === 409 && error.error && error.error.is_conflict) {
+            return startUploadSession();
+          } else {
+            reject(error);
+          }
         }
-        offset = currentOffset; // Update the offset for the finishUpload function
       };
 
-      const finishUpload = () => {
-        let today = new Date();
-        let path = today.getFullYear() + "/" + (today.getMonth() + 1);
-        return dbx.filesUploadSessionFinish({
-          cursor: {
-            session_id: sessionId,
-            offset,
-          },
-          commit: {
-            path: "/" + path + "/" + file_name,
-          },
-          contents: '',
-        });
-      };
+      const startUploadSession = async () => {
+        const response = await dbx.filesUploadSessionStart({ close: false, contents: '' });
+        const sessionId = response.result.session_id;
+        const chunkSize = 25 * 1024 * 1024;
+        const numChunks = Math.ceil(fileSize / chunkSize);
+        let offset = 0;
 
-      uploadChunks()
-        .then(() => finishUpload())
-        .then(() => {
-          console.log(file_name, "File uploaded at", new Date());
-          unlinkSync(join(process.cwd(), 'temp', file_name))
-          return new Promise((resolve, reject) => {
-            db.run('DELETE FROM files WHERE id = ?', [id], () => {
-              console.log(file_name, "File deleted at", new Date());
-              resolve();
-            });
+        const uploadChunk = async (chunkData, currentOffset) => {
+          return dbx.filesUploadSessionAppendV2({
+            cursor: {
+              session_id: sessionId,
+              offset: currentOffset,
+            },
+            close: false,
+            contents: chunkData,
           });
-        })
-        .then(() => {
-          resolve('File upload and cleanup complete');
-        })
-        .catch((error) => {
-          console.error('Error uploading file:', error);
-          reject(error);
-        });
+        };
+
+        const uploadChunks = async () => {
+          let currentOffset = offset;
+
+          for (let i = 0; i < numChunks; i++) {
+            const start = i * chunkSize;
+            const end = Math.min(fileSize, start + chunkSize);
+            const chunkData = fileContent.slice(start, end);
+
+            console.log("Uploading single chunk", i, start, end);
+            await uploadChunk(chunkData, currentOffset);
+            currentOffset += chunkData.length; // Increment by the actual chunk size
+            console.log(`Uploaded chunk ${i + 1} of ${numChunks}`);
+          }
+          offset = currentOffset; // Update the offset for the finishUpload function
+        };
+
+        const finishUpload = () => {
+          return dbx.filesUploadSessionFinish({
+            cursor: {
+              session_id: sessionId,
+              offset,
+            },
+            commit: {
+              path: "/" + path + "/" + file_name,
+            },
+            contents: '',
+          });
+        };
+
+        uploadChunks()
+          .then(() => finishUpload())
+          .then(() => {
+            console.log(file_name, "File uploaded at", new Date());
+            return unlinkAsync(join(process.cwd(), 'temp', file_name))
+              .then(() => {
+                return new Promise((resolve, reject) => {
+                  db.run('DELETE FROM files WHERE id = ?', [id], () => {
+                    console.log(file_name, "File deleted at", new Date());
+                    resolve();
+                  });
+                });
+              })
+              .catch((err) => {
+                console.log('Error deleting the file:', err, file_name);
+                reject(err);
+              });
+          })
+          .then(() => {
+            resolve('File upload and cleanup complete');
+          })
+          .catch((error) => {
+            console.error('Error uploading file:', error);
+            reject(error);
+          });
+      };
+      // Check if the file exists and proceed with the upload
+      checkFileExists();
     } catch (err) {
       console.error('Error uploading the file:', err);
       reject(err);
