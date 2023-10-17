@@ -124,8 +124,8 @@ const cronExecution = () =>{
             const url = row.url;
             const size = row.size;
             if(size > 100000000){
-              await backup_big_files(row);
               console.log("big file----",file_name);
+              await backup_big_files(row);
               continue;
             }
             else{
