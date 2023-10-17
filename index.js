@@ -354,20 +354,13 @@ const upload_big_files = async (fileContent, fileSize, file_name, id) => {
         .then(() => finishUpload())
         .then(() => {
           console.log(file_name, "File uploaded at", new Date());
-          if(unlinkSync(join(process.cwd(), 'temp', file_name)))
-          {
-            return new Promise((resolve, reject) => {
-              db.run('DELETE FROM files WHERE id = ?', [id], () => {
-                console.log(file_name, "File deleted at", new Date());
-                resolve();
-              });
+          unlinkSync(join(process.cwd(), 'temp', file_name))
+          return new Promise((resolve, reject) => {
+            db.run('DELETE FROM files WHERE id = ?', [id], () => {
+              console.log(file_name, "File deleted at", new Date());
+              resolve();
             });
-          }
-          else{
-            console.log('Error deleting the file:', file_name);
-            resolve()
-          }
-      
+          });
         })
         .then(() => {
           resolve('File upload and cleanup complete');
