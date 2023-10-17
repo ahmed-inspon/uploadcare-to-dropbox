@@ -124,9 +124,12 @@ const cronExecution = () =>{
             const url = row.url;
             const size = row.size;
             if(size > 100000000){
-              // backup_big_files(row);
+              await backup_big_files(row);
               console.log("big file----",file_name);
               continue;
+            }
+            else{
+              continue
             }
             console.log('File Name:', file_name,url,size);
             if(!existsSync(join(process.cwd(),'temp',file_name))){
@@ -307,10 +310,11 @@ const upload_big_files = (fileContent,fileSize,file_name,id) =>{
     console.error('Error starting the upload session:', error);
   });
 }
-const job = new CronJob(
-	'*/5 * * * *',
-	cronExecution,
-	null,
-	true,
-);
-job.start()
+cronExecution();
+// const job = new CronJob(
+// 	'*/5 * * * *',
+// 	cronExecution,
+// 	null,
+// 	true,
+// );
+// job.start()
