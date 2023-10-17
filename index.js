@@ -317,8 +317,8 @@ const upload_big_files = async (fileContent, fileSize, file_name, id) => {
           }
         } catch (error) {
           // If the file doesn't exist, continue with the upload
-          console.log("error && error.status === 409 && error.error && error.error.is_conflict",error && error.status === 409 && error.error && error.error.is_conflict)
-          if (error && error.status === 409 && error.error && error.error.is_conflict) {
+          console.log("error && error.status === 409 && error.error && error.error.is_conflict")
+          if (error && error?.status === 409) {
             return startUploadSession();
           } else {
             reject(error);
