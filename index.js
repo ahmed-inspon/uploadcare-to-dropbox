@@ -364,7 +364,7 @@ const upload_big_files = async (fileContent, fileSize, file_name, id) => {
             });
           }
           else{
-            console.log('Error deleting the file:', err, file_name);
+            console.log('Error deleting the file:', file_name);
             resolve()
           }
       
