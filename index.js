@@ -126,12 +126,9 @@ const cronExecution = () =>{
             if(size > 100000000){
               console.log("big file----",file_name);
               await backup_big_files(row);
-              continue;
-            }
-            else{
               continue
             }
-            console.log('File Name:', file_name,url,size);
+            console.log('small Name:', file_name,url,size);
             if(!existsSync(join(process.cwd(),'temp',file_name))){
               try {
                 const fileResponse = await axios({
