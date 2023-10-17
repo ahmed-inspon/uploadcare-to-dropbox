@@ -300,7 +300,6 @@ const backup_big_files = async(row) =>{
 //     });
 //   });
 // }
-
 const upload_big_files = async (fileContent, fileSize, file_name, id) => {
   return new Promise(async (resolve, reject) => {
     try {
@@ -337,6 +336,8 @@ const upload_big_files = async (fileContent, fileSize, file_name, id) => {
       };
 
       const finishUpload = () => {
+        let today = new Date();
+        let path = today.getFullYear()+"/"+(today.getMonth()+1);
         return dbx.filesUploadSessionFinish({
           cursor: {
             session_id: sessionId,
