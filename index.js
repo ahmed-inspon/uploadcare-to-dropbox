@@ -279,7 +279,7 @@ function upload_big_files(file_name, id) {
         dbx.filesUploadSessionStart({ contents: chunk })
           .then((response) => {
             sessionId = response.session_id;
-            console.log("session-id",sessionId);
+            console.log("session-id",sessionId,response);
             offset += chunk.length;
             uploadChunk(chunk);
           })
