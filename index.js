@@ -231,7 +231,8 @@ const backup_big_files = async(row) =>{
   upload_big_files(fileContent,fileSize,file_name,id);
 }
 
-const upload_big_files = (fileContent,fileSize,file_name,id) =>{
+const upload_big_files = async (fileContent,fileSize,file_name,id) =>{
+  let dbx = new Dropbox({ accessToken: await get_refresh_token()});
   dbx.filesUploadSessionStart({ close: false, contents: fileContent })
   .then((response) => {
     const sessionId = response.result.session_id;
