@@ -226,160 +226,160 @@ const backup_big_files = async(row) =>{
   if(!existsSync(join(process.cwd(),'temp',file_name))){
     await file_download(file_name,url)
   }
-  // const fileContent = readFileSync(join(process.cwd(),'temp',file_name));
-  // const fileSize = fileContent.length;
-  console.log(await upload_big_files(file_name,id),file_name);
+  const fileContent = readFileSync(join(process.cwd(),'temp',file_name));
+  const fileSize = fileContent.length;
+  console.log(await upload_big_files(fileContent,fileSize,file_name,id));
 }
 
-function upload_big_files(file_name, id) {
-  return new Promise(async (resolve, reject) => {
-    const chunkSize = 4 * 1024 * 1024; // 4MB chunks (adjust as needed)
-    const localFilePath = join(process.cwd(),'temp',file_name)
-    const fileStream = createReadStream(localFilePath,{highWaterMark:chunkSize});
-    let offset = 0;
-    let sessionId;
-    let dbx = new Dropbox({ accessToken: await get_refresh_token()});
-    // Function to upload a chunk
-    async function uploadChunk(chunk) {
-      try {
-        console.log("offset",offset,sessionId);
-        await dbx.filesUploadSessionAppendV2({
-          cursor: { session_id: sessionId, offset: offset },
-          close: false,
-          contents: chunk,
-        });
-        offset += chunk.length;
-      } catch (error) {
-        reject(error);
-      }
-    }
-
-    // Function to finish the upload session
-    async function finishUpload(file_name) {
-      try {
-
-        let today = new Date();
-        let path = today.getFullYear()+"/"+(today.getMonth()+1);    
-        await dbx.filesUploadSessionFinish({
-          cursor: {
-            session_id: sessionId,
-            offset: offset,
-          },
-          commit: { path: "/"+path+"/"+file_name },
-        });
-        resolve('File upload complete');
-      } catch (error) {
-        reject(error);
-      }
-    }
-
-    fileStream.on('data', (chunk) => {
-      if (!sessionId) {
-        console.log("chunk size",chunk.length,offset);
-        // Start a new upload session
-        dbx.filesUploadSessionStart({ contents: chunk })
-          .then((response) => {
-            sessionId = response.result.session_id;
-            // console.log("session-id",sessionId,response);
-            offset += chunk.length;
-            uploadChunk(chunk);
-          })
-          .catch((error) => {
-            reject(error);
-          });
-      } else {
-        // Continue the upload session
-        uploadChunk(chunk);
-      }
-    });
-
-    fileStream.on('end', () => {
-      // Finish the upload session when the file is fully uploaded
-      finishUpload(file_name);
-    });
-  });
-}
-
-// const upload_big_files = async (fileContent,fileSize,file_name,id) =>{
-//   let dbx = new Dropbox({ accessToken: await get_refresh_token()});
-//   dbx.filesUploadSessionStart({ close: false, contents: fileContent })
-//   .then((response) => {
-//     const sessionId = response.result.session_id;
-
-//     // Define the chunk size (4 MB is a reasonable chunk size)
-//     const chunkSize = 4 * 1024 * 1024;
-
-//     // Calculate the number of chunks
-//     const numChunks = Math.ceil(fileSize / chunkSize);
-
+// function upload_big_files(file_name, id) {
+//   return new Promise(async (resolve, reject) => {
+//     const chunkSize = 4 * 1024 * 1024; // 4MB chunks (adjust as needed)
+//     const localFilePath = join(process.cwd(),'temp',file_name)
+//     const fileStream = createReadStream(localFilePath,{highWaterMark:chunkSize});
 //     let offset = 0;
-
+//     let sessionId;
+//     let dbx = new Dropbox({ accessToken: await get_refresh_token()});
 //     // Function to upload a chunk
-//     const uploadChunk = async (chunkData) => {
-//       return dbx.filesUploadSessionAppendV2({
-//         cursor: {
-//           session_id: sessionId,
-//           offset,
-//         },
-//         close: false,
-//         contents: chunkData,
-//       });
-//     };
-
-//     // Upload each chunk
-//     const uploadChunks = async () => {
-//       for (let i = 0; i < numChunks; i++) {
-//         const start = i * chunkSize;
-//         const end = Math.min(fileSize, start + chunkSize);
-//         const chunkData = fileContent.slice(start, end);
-
-//         await uploadChunk(chunkData);
-
-//         offset += chunkSize;
-
-//         console.log(`Uploaded chunk ${i + 1} of ${numChunks}`);
+//     async function uploadChunk(chunk) {
+//       try {
+//         console.log("offset",offset,sessionId);
+//         await dbx.filesUploadSessionAppendV2({
+//           cursor: { session_id: sessionId, offset: offset },
+//           close: false,
+//           contents: chunk,
+//         });
+//         offset += chunk.length;
+//       } catch (error) {
+//         reject(error);
 //       }
-//     };
+//     }
 
-//     // Finish the upload session
-//     let today = new Date();
-//     let path = today.getFullYear()+"/"+(today.getMonth()+1);
-//     const finishUpload = () => {
-//       return dbx.filesUploadSessionFinish({
-//         cursor: {
-//           session_id: sessionId,
-//           offset,
-//         },
-//         commit: {
-//           path: "/"+path+"/"+file_name,
-//         },
-//         contents: '',
-//       });
-//     };
+//     // Function to finish the upload session
+//     async function finishUpload(file_name) {
+//       try {
 
-//     // Upload the chunks and finish the session
-//     uploadChunks()
-//       .then(() => finishUpload())
-//       .then(() => {
-//         console.log(file_name," File uploaded at",new Date())
-//         try{
-//           unlinkSync(join(process.cwd(),'temp',file_name));
-//           db.run('DELETE FROM files WHERE id = ?',[id],()=>{
-//             console.log(file_name," File deleted at",new Date())
+//         let today = new Date();
+//         let path = today.getFullYear()+"/"+(today.getMonth()+1);    
+//         await dbx.filesUploadSessionFinish({
+//           cursor: {
+//             session_id: sessionId,
+//             offset: offset,
+//           },
+//           commit: { path: "/"+path+"/"+file_name },
+//         });
+//         resolve('File upload complete');
+//       } catch (error) {
+//         reject(error);
+//       }
+//     }
+
+//     fileStream.on('data', (chunk) => {
+//       if (!sessionId) {
+//         console.log("chunk size",chunk.length,offset);
+//         // Start a new upload session
+//         dbx.filesUploadSessionStart({ contents: chunk })
+//           .then((response) => {
+//             sessionId = response.result.session_id;
+//             // console.log("session-id",sessionId,response);
+//             offset += chunk.length;
+//             uploadChunk(chunk);
 //           })
-//         }
-//         catch(err){
-//           console.log('err',err,file_name);
-//         }
-//       })
-//       .catch((error) => {
-//         console.error('Error uploading file:', error);
-//       });
-//   })
-//   .catch((error) => {
-//     console.error('Error starting the upload session:', error);
+//           .catch((error) => {
+//             reject(error);
+//           });
+//       } else {
+//         // Continue the upload session
+//         uploadChunk(chunk);
+//       }
+//     });
+
+//     fileStream.on('end', () => {
+//       // Finish the upload session when the file is fully uploaded
+//       finishUpload(file_name);
+//     });
 //   });
 // }
+
+const upload_big_files = async (fileContent,fileSize,file_name,id) =>{
+  let dbx = new Dropbox({ accessToken: await get_refresh_token()});
+  dbx.filesUploadSessionStart({ close: false, contents: fileContent })
+  .then((response) => {
+    const sessionId = response.result.session_id;
+
+    // Define the chunk size (4 MB is a reasonable chunk size)
+    const chunkSize = 4 * 1024 * 1024;
+
+    // Calculate the number of chunks
+    const numChunks = Math.ceil(fileSize / chunkSize);
+
+    let offset = 0;
+
+    // Function to upload a chunk
+    const uploadChunk = async (chunkData) => {
+      return dbx.filesUploadSessionAppendV2({
+        cursor: {
+          session_id: sessionId,
+          offset,
+        },
+        close: false,
+        contents: chunkData,
+      });
+    };
+
+    // Upload each chunk
+    const uploadChunks = async () => {
+      for (let i = 0; i < numChunks; i++) {
+        const start = i * chunkSize;
+        const end = Math.min(fileSize, start + chunkSize);
+        const chunkData = fileContent.slice(start, end);
+
+        await uploadChunk(chunkData);
+
+        offset += chunkSize;
+
+        console.log(`Uploaded chunk ${i + 1} of ${numChunks}`);
+      }
+    };
+
+    // Finish the upload session
+    let today = new Date();
+    let path = today.getFullYear()+"/"+(today.getMonth()+1);
+    const finishUpload = () => {
+      return dbx.filesUploadSessionFinish({
+        cursor: {
+          session_id: sessionId,
+          offset,
+        },
+        commit: {
+          path: "/"+path+"/"+file_name,
+        },
+        contents: '',
+      });
+    };
+
+    // Upload the chunks and finish the session
+    uploadChunks()
+      .then(() => finishUpload())
+      .then(() => {
+        console.log(file_name," File uploaded at",new Date())
+        try{
+          unlinkSync(join(process.cwd(),'temp',file_name));
+          db.run('DELETE FROM files WHERE id = ?',[id],()=>{
+            console.log(file_name," File deleted at",new Date())
+          })
+        }
+        catch(err){
+          console.log('err',err,file_name);
+        }
+      })
+      .catch((error) => {
+        console.error('Error uploading file:', error);
+      });
+  })
+  .catch((error) => {
+    console.error('Error starting the upload session:', error);
+  });
+}
 cronExecution();
 // const job = new CronJob(
 // 	'*/5 * * * *',
