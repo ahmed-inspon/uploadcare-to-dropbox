@@ -242,6 +242,7 @@ function upload_big_files(file_name, id) {
     // Function to upload a chunk
     async function uploadChunk(chunk) {
       try {
+        console.log("offset",offset,sessionId);
         await dbx.filesUploadSessionAppendV2({
           cursor: { session_id: sessionId, offset: offset },
           close: false,
@@ -278,6 +279,7 @@ function upload_big_files(file_name, id) {
         dbx.filesUploadSessionStart({ contents: chunk })
           .then((response) => {
             sessionId = response.session_id;
+            console.log("session-id",sessionId);
             offset += chunk.length;
             uploadChunk(chunk);
           })
