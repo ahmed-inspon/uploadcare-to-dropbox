@@ -305,9 +305,8 @@ const upload_big_files = async (fileContent, fileSize, file_name, id) => {
   return new Promise(async (resolve, reject) => {
     try {
       let dbx = new Dropbox({ accessToken: await get_refresh_token() });
-      const response = await dbx.filesUploadSessionStart({ close: false, contents: fileContent });
+      const response = await dbx.filesUploadSessionStart({ close: false, contents: '' });
       const sessionId = response.result.session_id;
-
       const chunkSize = 4 * 1024 * 1024;
       const numChunks = Math.ceil(fileSize / chunkSize);
 
