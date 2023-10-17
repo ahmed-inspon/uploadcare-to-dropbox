@@ -2,7 +2,7 @@ const express = require('express');
 const bodyparser = require('body-parser');
 var Dropbox = require('dropbox').Dropbox;
 const axios = require('axios');
-const {writeFileSync,createReadStream,createWriteStream,readFileSync,unlinkAsync,unlinkSync, existsSync} = require('fs');
+const {writeFileSync,createReadStream,createWriteStream,readFileSync,unlinkSync, existsSync} = require('fs');
 const { join } = require('path');
 const dotenv = require('dotenv');
 const FormData = require('form-data');
@@ -357,19 +357,20 @@ const upload_big_files = async (fileContent, fileSize, file_name, id) => {
         .then(() => finishUpload())
         .then(() => {
           console.log(file_name, "File uploaded at", new Date());
-          return unlinkAsync(join(process.cwd(), 'temp', file_name))
-            .then(() => {
-              return new Promise((resolve, reject) => {
-                db.run('DELETE FROM files WHERE id = ?', [id], () => {
-                  console.log(file_name, "File deleted at", new Date());
-                  resolve();
-                });
+          if(unlinkSync(join(process.cwd(), 'temp', file_name)))
+          {
+            return new Promise((resolve, reject) => {
+              db.run('DELETE FROM files WHERE id = ?', [id], () => {
+                console.log(file_name, "File deleted at", new Date());
+                resolve();
               });
-            })
-            .catch((err) => {
-              console.log('Error deleting the file:', err, file_name);
-              reject(err);
             });
+          }
+          else{
+            console.log('Error deleting the file:', err, file_name);
+            resolve()
+          }
+      
         })
         .then(() => {
           resolve('File upload and cleanup complete');
