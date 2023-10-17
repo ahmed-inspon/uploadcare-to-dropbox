@@ -306,6 +306,7 @@ const upload_big_files = async (fileContent, fileSize, file_name, id) => {
       // Check if the file already exists in Dropbox
       const checkFileExists = async () => {
         try {
+          console.log("dropbox file path to check","/" + path + "/" + file_name)
           const response = await dbx.filesGetMetadata({ path: "/" + path + "/" + file_name });
           if (response.result && response.result.id) {
             console.log("File already exists in Dropbox");
