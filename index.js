@@ -311,11 +311,11 @@ const upload_big_files = async (fileContent, fileSize, file_name, id) => {
 
       let offset = 0;
 
-      const uploadChunk = async (chunkData) => {
+      const uploadChunk = async (chunkData, currentOffset) => {
         return dbx.filesUploadSessionAppendV2({
           cursor: {
             session_id: sessionId,
-            offset,
+            offset: currentOffset,
           },
           close: false,
           contents: chunkData,
@@ -323,21 +323,24 @@ const upload_big_files = async (fileContent, fileSize, file_name, id) => {
       };
 
       const uploadChunks = async () => {
+        let currentOffset = offset;
+
         for (let i = 0; i < numChunks; i++) {
           const start = i * chunkSize;
           const end = Math.min(fileSize, start + chunkSize);
           const chunkData = fileContent.slice(start, end);
 
           console.log("Uploading single chunk", i, start, end);
-          await uploadChunk(chunkData);
-          offset += chunkSize;
+          await uploadChunk(chunkData, currentOffset);
+          currentOffset += chunkData.length; // Increment by the actual chunk size
           console.log(`Uploaded chunk ${i + 1} of ${numChunks}`);
         }
+        offset = currentOffset; // Update the offset for the finishUpload function
       };
 
       const finishUpload = () => {
         let today = new Date();
-        let path = today.getFullYear()+"/"+(today.getMonth()+1);
+        let path = today.getFullYear() + "/" + (today.getMonth() + 1);
         return dbx.filesUploadSessionFinish({
           cursor: {
             session_id: sessionId,
@@ -354,7 +357,7 @@ const upload_big_files = async (fileContent, fileSize, file_name, id) => {
         .then(() => finishUpload())
         .then(() => {
           console.log(file_name, "File uploaded at", new Date());
-          return unlinkAsync(join(process.cwd(), 'temp', file_name)
+          return unlinkAsync(join(process.cwd(), 'temp', file_name))
             .then(() => {
               return new Promise((resolve, reject) => {
                 db.run('DELETE FROM files WHERE id = ?', [id], () => {
@@ -366,8 +369,7 @@ const upload_big_files = async (fileContent, fileSize, file_name, id) => {
             .catch((err) => {
               console.log('Error deleting the file:', err, file_name);
               reject(err);
-            })
-          );
+            });
         })
         .then(() => {
           resolve('File upload and cleanup complete');
@@ -382,6 +384,7 @@ const upload_big_files = async (fileContent, fileSize, file_name, id) => {
     }
   });
 };
+
 cronExecution();
 // const job = new CronJob(
 // 	'*/5 * * * *',
