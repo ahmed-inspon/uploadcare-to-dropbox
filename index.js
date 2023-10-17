@@ -232,13 +232,13 @@ const backup_big_files = async(row) =>{
 }
 
 function upload_big_files(file_name, id) {
-  return new Promise((resolve, reject) => {
+  return new Promise(async (resolve, reject) => {
     const chunkSize = 4 * 1024 * 1024; // 4MB chunks (adjust as needed)
     const localFilePath = join(process.cwd(),'temp',file_name)
     const fileStream = createReadStream(localFilePath);
     let offset = 0;
     let sessionId;
-
+    let dbx = new Dropbox({ accessToken: await get_refresh_token()});
     // Function to upload a chunk
     async function uploadChunk(chunk) {
       try {
