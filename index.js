@@ -216,17 +216,22 @@ const file_download = async (file_name, url) => {
 };
 
 const backup_big_files = async(row) =>{
-  const file_name = row.name;
-  const url = row.url;
-  const size = row.size;
-  const id = row.id;
-  if(!existsSync(join(process.cwd(),'temp',file_name))){
-    await file_download(file_name,url)
+  try{
+    const file_name = row.name;
+    const url = row.url;
+    const size = row.size;
+    const id = row.id;
+    if(!existsSync(join(process.cwd(),'temp',file_name))){
+      await file_download(file_name,url)
+    }
+    const fileContent = readFileSync(join(process.cwd(),'temp',file_name));
+    const fileSize = fileContent.length;
+    console.log("fileSize",fileSize)
+    console.log(await upload_big_files(fileContent,fileSize,file_name,id));
   }
-  const fileContent = readFileSync(join(process.cwd(),'temp',file_name));
-  const fileSize = fileContent.length;
-  console.log("fileSize",fileSize)
-  console.log(await upload_big_files(fileContent,fileSize,file_name,id));
+  catch(err){
+    console.log("err",err);
+  }
 }
 
 // function upload_big_files(file_name, id) {
