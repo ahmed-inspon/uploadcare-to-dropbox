@@ -54,7 +54,7 @@ const get_refresh_token = async ()=>{
     }
   }
   catch (error) {
-    console.log(error);
+    console.log("axios-",error);
     return null
   }
 }
@@ -228,6 +228,7 @@ const backup_big_files = async(row) =>{
   }
   const fileContent = readFileSync(join(process.cwd(),'temp',file_name));
   const fileSize = fileContent.length;
+  console.log("fileSize",fileSize)
   console.log(await upload_big_files(fileContent,fileSize,file_name,id));
 }
 
@@ -311,7 +312,7 @@ const upload_big_files = async (fileContent,fileSize,file_name,id) =>{
 
     // Calculate the number of chunks
     const numChunks = Math.ceil(fileSize / chunkSize);
-
+    console.log("numChunks",numChunks)
     let offset = 0;
 
     // Function to upload a chunk
@@ -333,6 +334,7 @@ const upload_big_files = async (fileContent,fileSize,file_name,id) =>{
         const end = Math.min(fileSize, start + chunkSize);
         const chunkData = fileContent.slice(start, end);
 
+        console.log("uploading single chunk",i,start,end)
         await uploadChunk(chunkData);
 
         offset += chunkSize;
