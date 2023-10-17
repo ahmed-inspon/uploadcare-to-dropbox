@@ -275,7 +275,7 @@ function upload_big_files(file_name, id) {
 
     fileStream.on('data', (chunk) => {
       if (!sessionId) {
-        console.log("chunk size",chunk.size,offset);
+        console.log("chunk size",chunk,offset);
         // Start a new upload session
         dbx.filesUploadSessionStart({ contents: chunk })
           .then((response) => {
