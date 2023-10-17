@@ -301,22 +301,18 @@ const backup_big_files = async(row) =>{
 //   });
 // }
 
-const upload_big_files = async (fileContent,fileSize,file_name,id) =>{
-  try{
-    let dbx = new Dropbox({ accessToken: await get_refresh_token()});
-    dbx.filesUploadSessionStart({ close: false, contents: fileContent })
-    .then((response) => {
+const upload_big_files = async (fileContent, fileSize, file_name, id) => {
+  return new Promise(async (resolve, reject) => {
+    try {
+      let dbx = new Dropbox({ accessToken: await get_refresh_token() });
+      const response = await dbx.filesUploadSessionStart({ close: false, contents: fileContent });
       const sessionId = response.result.session_id;
-  
-      // Define the chunk size (4 MB is a reasonable chunk size)
+
       const chunkSize = 4 * 1024 * 1024;
-  
-      // Calculate the number of chunks
       const numChunks = Math.ceil(fileSize / chunkSize);
-      console.log("numChunks",numChunks)
+
       let offset = 0;
-  
-      // Function to upload a chunk
+
       const uploadChunk = async (chunkData) => {
         return dbx.filesUploadSessionAppendV2({
           cursor: {
@@ -327,26 +323,20 @@ const upload_big_files = async (fileContent,fileSize,file_name,id) =>{
           contents: chunkData,
         });
       };
-  
-      // Upload each chunk
+
       const uploadChunks = async () => {
         for (let i = 0; i < numChunks; i++) {
           const start = i * chunkSize;
           const end = Math.min(fileSize, start + chunkSize);
           const chunkData = fileContent.slice(start, end);
-  
-          console.log("uploading single chunk",i,start,end)
+
+          console.log("Uploading single chunk", i, start, end);
           await uploadChunk(chunkData);
-  
           offset += chunkSize;
-  
           console.log(`Uploaded chunk ${i + 1} of ${numChunks}`);
         }
       };
-  
-      // Finish the upload session
-      let today = new Date();
-      let path = today.getFullYear()+"/"+(today.getMonth()+1);
+
       const finishUpload = () => {
         return dbx.filesUploadSessionFinish({
           cursor: {
@@ -354,39 +344,44 @@ const upload_big_files = async (fileContent,fileSize,file_name,id) =>{
             offset,
           },
           commit: {
-            path: "/"+path+"/"+file_name,
+            path: "/" + path + "/" + file_name,
           },
           contents: '',
         });
       };
-  
-      // Upload the chunks and finish the session
+
       uploadChunks()
         .then(() => finishUpload())
         .then(() => {
-          console.log(file_name," File uploaded at",new Date())
-          try{
-            unlinkSync(join(process.cwd(),'temp',file_name));
-            db.run('DELETE FROM files WHERE id = ?',[id],()=>{
-              console.log(file_name," File deleted at",new Date())
+          console.log(file_name, "File uploaded at", new Date());
+          return unlinkAsync(join(process.cwd(), 'temp', file_name)
+            .then(() => {
+              return new Promise((resolve, reject) => {
+                db.run('DELETE FROM files WHERE id = ?', [id], () => {
+                  console.log(file_name, "File deleted at", new Date());
+                  resolve();
+                });
+              });
             })
-          }
-          catch(err){
-            console.log('err',err,file_name);
-          }
+            .catch((err) => {
+              console.log('Error deleting the file:', err, file_name);
+              reject(err);
+            })
+          );
+        })
+        .then(() => {
+          resolve('File upload and cleanup complete');
         })
         .catch((error) => {
           console.error('Error uploading file:', error);
+          reject(error);
         });
-    })
-    .catch((error) => {
-      console.error('Error starting the upload session:', error);
-    });
-  }
-  catch(err){
-    console.error('Error starting the upload session:', err);
-  }
-}
+    } catch (err) {
+      console.error('Error uploading the file:', err);
+      reject(err);
+    }
+  });
+};
 cronExecution();
 // const job = new CronJob(
 // 	'*/5 * * * *',
