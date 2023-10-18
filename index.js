@@ -79,6 +79,10 @@ let sample = {
     },
     "file": "https://ucarecdn.com/d9b26444-3cf4-408d-9211-be299f41dccc/inbound8868601096635665276.jpg"
   }
+
+app.get("/",async(req,res)=>{
+  return res.json({"success":true});
+})
 app.post('/webhook',async(req,res)=>{
     let {data,file} = req.body;
     let file_uuid = data.uuid;
