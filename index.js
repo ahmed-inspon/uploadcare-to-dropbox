@@ -177,6 +177,7 @@ const cronExecution = () =>{
             })
             bar1.update((i+1));
           }
+          bar1.stop();
           console.log("Batch Ended:",new Date());
           cron_running = false;
       }
