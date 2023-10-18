@@ -135,6 +135,7 @@ const cronExecution = () =>{
             if(size > 100000000){
               // console.log("big file----",file_name);
               await backup_big_files(row);
+              console.log(`${file_name} Uploaded (${(i+1)}/${rows.length})`)
               bar1.update((i+1));
               continue
             }
@@ -149,6 +150,7 @@ const cronExecution = () =>{
                 writeFileSync(join(process.cwd(),'temp',file_name),Buffer.from(fileResponse.data),{encoding:'binary'});
               } catch (error) {
                 console.error("file does not exist")
+                console.log(`${file_name} Uploaded (${(i+1)}/${rows.length})`)
                 bar1.update((i+1));
                 continue;
               }
@@ -175,6 +177,7 @@ const cronExecution = () =>{
                 resolve()
               })
             })
+            console.log(`${file_name} Uploaded (${(i+1)}/${rows.length})`)
             bar1.update((i+1));
           }
           bar1.stop();
