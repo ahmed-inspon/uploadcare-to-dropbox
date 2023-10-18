@@ -316,6 +316,20 @@ const upload_big_files = async (fileContent, fileSize, file_name, id) => {
           const response = await dbx.filesGetMetadata({ path: "/" + path + "/" + file_name });
           if (response.result && response.result.id) {
             console.log("File already exists in Dropbox");
+            try{
+              unlinkSync(join(process.cwd(), 'temp', file_name))
+              new Promise((resolve, reject) => {
+                db.run('DELETE FROM files WHERE id = ?', [id], () => {
+                  console.log(file_name, "File deleted at", new Date());
+                  resolve();
+                });
+              });
+            }
+            catch(err)
+            {
+              console.log("something wrong happened");
+            }
+            
             resolve("File already exists in Dropbox");
           } else {
             return startUploadSession();
