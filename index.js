@@ -111,7 +111,7 @@ const cronExecution = () =>{
     }
   
     cron_running = true;
-    db.all('SELECT id,name,url,size,created_at FROM files LIMIT 200', async (err, rows) => {
+    db.all('SELECT id,name,url,size,created_at FROM files LIMIT 300', async (err, rows) => {
       if (err) {
         console.error(err.message);
         cron_running = false;
