@@ -407,11 +407,11 @@ const upload_big_files = async (fileContent, fileSize, file_name, id) => {
   });
 };
 
-cronExecution();
-// const job = new CronJob(
-// 	'*/5 * * * *',
-// 	cronExecution,
-// 	null,
-// 	true,
-// );
-// job.start()
+// cronExecution();
+const job = new CronJob(
+	'*/5 * * * *',
+	cronExecution,
+	null,
+	true,
+);
+job.start()
