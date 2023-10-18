@@ -407,7 +407,7 @@ const upload_big_files = async (fileContent, fileSize, file_name, id) => {
 
 // cronExecution();
 const job = new CronJob(
-	'*/5 * * * *',
+	'*/3 * * * *',
 	cronExecution,
 	null,
 	true,
