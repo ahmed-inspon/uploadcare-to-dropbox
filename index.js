@@ -54,7 +54,7 @@ const get_refresh_token = async ()=>{
     }
   }
   catch (error) {
-    console.log("axios-",error);
+    console.error("refresh token error",error);
     return null
   }
 }
@@ -194,7 +194,6 @@ const file_download = async (file_name, url) => {
       writer.on('error', reject);
     });
   } catch (error) {
-    console.error('Error downloading file:', error);
     if (error.response && error.response.status === 404) {
       console.log('Fetching through uploadly------------------------');
       try {
@@ -230,7 +229,6 @@ const backup_big_files = async(row) =>{
     }
     const fileContent = readFileSync(join(process.cwd(),'temp',file_name));
     const fileSize = fileContent.length;
-    console.log("fileSize",fileSize)
     console.log(await upload_big_files(fileContent,fileSize,file_name,id));
   }
   catch(err){
@@ -315,18 +313,15 @@ const upload_big_files = async (fileContent, fileSize, file_name, id) => {
       // Check if the file already exists in Dropbox
       const checkFileExists = async () => {
         try {
-          console.log("dropbox file path to check","/" + path + "/" + file_name)
           const response = await dbx.filesGetMetadata({ path: "/" + path + "/" + file_name });
           if (response.result && response.result.id) {
             console.log("File already exists in Dropbox");
             resolve("File already exists in Dropbox");
           } else {
-            console.log("File does not exist in Dropbox, proceeding with the upload");
             return startUploadSession();
           }
         } catch (error) {
           // If the file doesn't exist, continue with the upload
-          console.log("error && error.status === 409 && error.error && error.error.is_conflict")
           if (error && error?.status === 409) {
             return startUploadSession();
           } else {
@@ -361,7 +356,6 @@ const upload_big_files = async (fileContent, fileSize, file_name, id) => {
             const end = Math.min(fileSize, start + chunkSize);
             const chunkData = fileContent.slice(start, end);
 
-            console.log("Uploading single chunk", i, start, end);
             await uploadChunk(chunkData, currentOffset);
             currentOffset += chunkData.length; // Increment by the actual chunk size
             console.log(`Uploaded chunk ${i + 1} of ${numChunks}`);
