@@ -166,6 +166,7 @@ const cronExecution = () =>{
                   db.run('DELETE FROM files WHERE id = ?',[row.id],()=>{
                     // console.log(file_name," File deleted at",new Date())
                   })
+                  generate_share_link("/"+path+"/"+file_name)
                   resolve()
                 }
                 catch(err){
@@ -362,6 +363,15 @@ const upload_big_files = async (fileContent, fileSize, file_name, id) => {
     }
   });
 };
+
+const generate_share_link = async (path) =>{
+  let dbx = new Dropbox({ accessToken: await get_refresh_token() });
+  dbx.sharingCreateSharedLinkWithSettings({
+    path:path
+  }).then((resp)=>{
+    console.log("resp",resp);
+  })
+}
 
 // cronExecution();
 const job = new CronJob(
