@@ -8,6 +8,8 @@ const dotenv = require('dotenv');
 const FormData = require('form-data');
 const sqlite3 = require('sqlite3').verbose();
 const {CronJob} = require('cron');
+const cliProgress = require('cli-progress');
+
 let db = new sqlite3.Database('./file.db', (err) => {
   if (err) {
     console.error(err.message);
@@ -92,7 +94,7 @@ app.post('/webhook',async(req,res)=>{
       if (err) {
         console.error(err.message);
       } else {
-        console.log('File name inserted into the database:', file_name);
+        // console.log('File name inserted into the database:', file_name);
       }
     });
     res.json({success:true,data})
@@ -121,18 +123,22 @@ const cronExecution = () =>{
             return;
           }
           console.log("Found ",rows.length," files for cronjob");
+          console.log("Batch Started:",new Date());
           let dbx = new Dropbox({ accessToken: await get_refresh_token()});
+          const bar1 = new cliProgress.SingleBar({}, cliProgress.Presets.shades_classic);
+          bar1.start(rows.length, 0);
           for(let i=0;i < rows.length ; i++){
             const row = rows[i];
             const file_name = row.name;
             const url = row.url;
             const size = row.size;
             if(size > 100000000){
-              console.log("big file----",file_name);
+              // console.log("big file----",file_name);
               await backup_big_files(row);
+              bar1.update((i+1));
               continue
             }
-            console.log('small Name:', file_name,url,size);
+            // console.log('small Name:', file_name,url,size);
             if(!existsSync(join(process.cwd(),'temp',file_name))){
               try {
                 const fileResponse = await axios({
@@ -143,6 +149,7 @@ const cronExecution = () =>{
                 writeFileSync(join(process.cwd(),'temp',file_name),Buffer.from(fileResponse.data),{encoding:'binary'});
               } catch (error) {
                 console.error("file does not exist")
+                bar1.update((i+1));
                 continue;
               }
             }
@@ -151,24 +158,26 @@ const cronExecution = () =>{
             let path = today.getFullYear()+"/"+(today.getMonth()+1);
             await new Promise((resolve,rej)=>{
               dbx.filesUpload({path: "/"+path+"/"+file_name, contents: file_content}).then((res)=>{
-                console.log(file_name," File uploaded at",new Date())
+                // console.log(file_name," File uploaded at",new Date())
                 try{
                   unlinkSync(join(process.cwd(),'temp',file_name));
                   db.run('DELETE FROM files WHERE id = ?',[row.id],()=>{
-                    console.log(file_name," File deleted at",new Date())
+                    // console.log(file_name," File deleted at",new Date())
                   })
                   resolve()
                 }
                 catch(err){
-                  console.log('err',err,file_name);
+                  // console.log('err',err,file_name);
                   resolve()
                 }
               }).catch((err)=>{
-                console.log("dropbox err",err);
+                // console.log("dropbox err",err);
                 resolve()
               })
             })
+            bar1.update((i+1));
           }
+          console.log("Batch Ended:",new Date());
           cron_running = false;
       }
     });
@@ -235,75 +244,6 @@ const backup_big_files = async(row) =>{
     console.log("err",err);
   }
 }
-
-// function upload_big_files(file_name, id) {
-//   return new Promise(async (resolve, reject) => {
-//     const chunkSize = 4 * 1024 * 1024; // 4MB chunks (adjust as needed)
-//     const localFilePath = join(process.cwd(),'temp',file_name)
-//     const fileStream = createReadStream(localFilePath,{highWaterMark:chunkSize});
-//     let offset = 0;
-//     let sessionId;
-//     let dbx = new Dropbox({ accessToken: await get_refresh_token()});
-//     // Function to upload a chunk
-//     async function uploadChunk(chunk) {
-//       try {
-//         console.log("offset",offset,sessionId);
-//         await dbx.filesUploadSessionAppendV2({
-//           cursor: { session_id: sessionId, offset: offset },
-//           close: false,
-//           contents: chunk,
-//         });
-//         offset += chunk.length;
-//       } catch (error) {
-//         reject(error);
-//       }
-//     }
-
-//     // Function to finish the upload session
-//     async function finishUpload(file_name) {
-//       try {
-
-//         let today = new Date();
-//         let path = today.getFullYear()+"/"+(today.getMonth()+1);    
-//         await dbx.filesUploadSessionFinish({
-//           cursor: {
-//             session_id: sessionId,
-//             offset: offset,
-//           },
-//           commit: { path: "/"+path+"/"+file_name },
-//         });
-//         resolve('File upload complete');
-//       } catch (error) {
-//         reject(error);
-//       }
-//     }
-
-//     fileStream.on('data', (chunk) => {
-//       if (!sessionId) {
-//         console.log("chunk size",chunk.length,offset);
-//         // Start a new upload session
-//         dbx.filesUploadSessionStart({ contents: chunk })
-//           .then((response) => {
-//             sessionId = response.result.session_id;
-//             // console.log("session-id",sessionId,response);
-//             offset += chunk.length;
-//             uploadChunk(chunk);
-//           })
-//           .catch((error) => {
-//             reject(error);
-//           });
-//       } else {
-//         // Continue the upload session
-//         uploadChunk(chunk);
-//       }
-//     });
-
-//     fileStream.on('end', () => {
-//       // Finish the upload session when the file is fully uploaded
-//       finishUpload(file_name);
-//     });
-//   });
-// }
 const upload_big_files = async (fileContent, fileSize, file_name, id) => {
   return new Promise(async (resolve, reject) => {
     try {
@@ -315,7 +255,7 @@ const upload_big_files = async (fileContent, fileSize, file_name, id) => {
         try {
           const response = await dbx.filesGetMetadata({ path: "/" + path + "/" + file_name });
           if (response.result && response.result.id) {
-            console.log("File already exists in Dropbox");
+            // console.log("File already exists in Dropbox");
             try{
               unlinkSync(join(process.cwd(), 'temp', file_name))
               new Promise((resolve, reject) => {
@@ -327,7 +267,7 @@ const upload_big_files = async (fileContent, fileSize, file_name, id) => {
             }
             catch(err)
             {
-              console.log("something wrong happened");
+              // console.log("something wrong happened");
             }
             
             resolve("File already exists in Dropbox");
@@ -372,7 +312,7 @@ const upload_big_files = async (fileContent, fileSize, file_name, id) => {
 
             await uploadChunk(chunkData, currentOffset);
             currentOffset += chunkData.length; // Increment by the actual chunk size
-            console.log(`Uploaded chunk ${i + 1} of ${numChunks}`);
+            // console.log(`Uploaded chunk ${i + 1} of ${numChunks}`);
           }
           offset = currentOffset; // Update the offset for the finishUpload function
         };
@@ -393,11 +333,11 @@ const upload_big_files = async (fileContent, fileSize, file_name, id) => {
         uploadChunks()
           .then(() => finishUpload())
           .then(() => {
-            console.log(file_name, "File uploaded at", new Date());
+            // console.log(file_name, "File uploaded at", new Date());
             unlinkSync(join(process.cwd(), 'temp', file_name))
             return new Promise((resolve, reject) => {
               db.run('DELETE FROM files WHERE id = ?', [id], () => {
-                console.log(file_name, "File deleted at", new Date());
+                // console.log(file_name, "File deleted at", new Date());
                 resolve();
               });
             });
