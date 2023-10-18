@@ -166,7 +166,7 @@ const cronExecution = () =>{
                   db.run('DELETE FROM files WHERE id = ?',[row.id],()=>{
                     // console.log(file_name," File deleted at",new Date())
                   })
-                  generate_share_link("/"+path+"/"+file_name)
+                  // generate_share_link("/"+path+"/"+file_name)
                   resolve()
                 }
                 catch(err){
