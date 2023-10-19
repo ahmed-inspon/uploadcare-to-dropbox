@@ -105,6 +105,23 @@ app.get('/alternate_link',async(req,res)=>{
  return res.sendFile(join(__dirname, '/loading_page.html'));
 })
 
+app.get('/check_for_dropbox',async(req,res)=>{
+  let {id} = req.query;
+  let dbx = new Dropbox({ accessToken: await get_refresh_token()});
+  let search_file = dbx.filesSearchV2({ "query":id ,
+  "options": {
+      "max_results":1
+  }}).then(({result})=>{
+    let matches = result?.matches?.[0];
+    if(matches){
+      return res.status(200).json({success:true});
+    }
+    return res.status(400).json({message:"id does not exist"});
+  }).catch((err)=>{
+    return res.status(400).json({message:"id does not exist"});
+  });
+})
+
 app.get('/generate_share_link',async(req,res)=>{
   let {id} = req.query;
   let dbx = new Dropbox({ accessToken: await get_refresh_token()});
