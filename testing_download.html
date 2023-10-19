@@ -63,6 +63,9 @@
         Download file
       </button>
     </div>
+    <div class="alternate-link">
+      <a href="" id="drop_box_link">Download original file (alternate link)</a>
+    </div>
     <script>
       const getFileURL = async (fileName, fileExt) => {
         var formdata = new FormData();
@@ -93,6 +96,8 @@
      console.log(result);
      if(result.success){
        console.log("SUCCESS")
+       document.querySelector('#drop_box_link').style.display = "block";
+       document.querySelector('#drop_box_link').href = `https://variantapp.inspon-cloud.com/alternate_link?id=${fileName}`
      }
   }
  </script>
@@ -228,15 +233,6 @@
 
       initDownload();
     </script>
-    <script>
-      const check_dropbox = () =>{
-        var url = new URL(decodeURIComponent(window.location.href).replace(" ", "").replace(/&amp;/g, "&").replace(/#/g, ""));
-        fileName = url.searchParams.get("ph_image");
-        if(fileName){
-          console.log("filename",fileName);
-        }
-      }
-      check_dropbox();
-    </script>
+
   </body>
 </html>
