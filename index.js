@@ -9,6 +9,7 @@ const FormData = require('form-data');
 const sqlite3 = require('sqlite3').verbose();
 const {CronJob} = require('cron');
 const cliProgress = require('cli-progress');
+var cors = require('cors')
 
 let db = new sqlite3.Database('./file.db', (err) => {
   if (err) {
@@ -24,6 +25,7 @@ db.serialize(() => {
 
 dotenv.config();
 const app = express();
+app.use(cors())
 app.use(bodyparser.json());
 
 app.get('/',(req,res)=>{
