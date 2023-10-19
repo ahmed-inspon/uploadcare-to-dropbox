@@ -228,6 +228,15 @@
 
       initDownload();
     </script>
-
+    <script>
+      const check_dropbox = () =>{
+        var url = new URL(decodeURIComponent(window.location.href).replace(" ", "").replace(/&amp;/g, "&").replace(/#/g, ""));
+        fileName = url.searchParams.get("ph_image");
+        if(fileName){
+          console.log("filename",fileName);
+        }
+      }
+      check_dropbox();
+    </script>
   </body>
 </html>
