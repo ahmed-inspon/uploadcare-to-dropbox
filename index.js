@@ -28,10 +28,6 @@ const app = express();
 app.use(cors())
 app.use(bodyparser.json());
 
-app.get('/',(req,res)=>{
-    res.send("hello world");
-})
-
 const get_refresh_token = async ()=>{
   let data = new FormData();
   data.append('client_id', process.env.CLIENT_ID);
@@ -105,6 +101,10 @@ app.post('/webhook',async(req,res)=>{
 
 app.get('/alternate_link',async(req,res)=>{
  return res.sendFile(join(__dirname, '/loading_page.html'));
+})
+
+app.get('/testing_download',async(req,res)=>{
+  return res.sendFile(join(__dirname, '/testing_download.html'));
 })
 
 app.get('/check_for_dropbox',async(req,res)=>{

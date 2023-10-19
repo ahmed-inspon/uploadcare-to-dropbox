@@ -1,0 +1,233 @@
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <title>Download Image - UploadField</title>
+    <style>
+      html * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 10vh 10vw;
+        font-family: Helvetica, Arial, sans-serif;
+      }
+      #previewImage {
+        display: none;
+        max-height: calc(80vh - 110px);
+        max-width: 80vw;
+        margin-right: auto;
+        margin-left: auto;
+      }
+      .buttons {
+        height: 60px;
+        margin-top: 20px;
+        text-align: center;
+      }
+      .buttons button {
+        background-color: #333;
+        color: #fff;
+        font-size: 14px;
+        border: none;
+        border-radius: 3px;
+        padding: 15px 25px;
+        text-transform: uppercase;
+        letter-spacing: 2px;
+        margin: 5px;
+        text-decoration: none;
+      }
+      #filename.file {
+        margin-top: 3em;
+        margin-bottom: 2em;
+      }
+      #filename {
+        text-align: center;
+      }
+    </style>
+    <script
+      src="https://cdnjs.cloudflare.com/ajax/libs/downloadjs/1.4.8/download.min.js"
+      integrity="sha512-WiGQZv8WpmQVRUFXZywo7pHIO0G/o3RyiAJZj8YXNN4AV7ReR1RYWVmZJ6y3H06blPcjJmG/sBpOVZjTSFFlzQ=="
+      crossorigin="anonymous"
+    ></script>
+  </head>
+  <body>
+    <img id="previewImage" src="" style="display: none" />
+    <h2 id="filename" style="display: none">
+      83935453_10157231243145965_8345431003010957312_n.jpg
+    </h2>
+    <div class="buttons">
+      <button
+        target="_blank"
+        id="downloadButton"
+        onClick="downloadImage()"
+        style="display: inline-block; cursor: pointer"
+      >
+        Download file
+      </button>
+    </div>
+    <script>
+      const getFileURL = async (fileName, fileExt) => {
+        var formdata = new FormData();
+        formdata.append("name", fileName);
+        formdata.append("ext", fileExt);
+
+        var requestOptions = {
+          method: "POST",
+          body: formdata,
+          redirect: "follow",
+        };
+
+        const response = await fetch(
+          "https://inspon-app.com/photoupload/check_image.php",
+          requestOptions
+        );
+        const result = await response.text();
+
+        return result;
+      };
+    </script>
+
+<script>
+  const check_file_in_dropbox = async (fileName) => {
+     const options = {method: 'GET'};
+     const response = await fetch(`https://variantapp.inspon-cloud.com/check_for_dropbox?id=${fileName}`, options)
+     const result = await response.json({});
+     console.log(result);
+     if(result.success){
+       console.log("SUCCESS")
+     }
+  }
+ </script>
+
+    <script>
+      let fileName, originalFile, extension;
+
+      function downloadImage() {
+        window.open(
+          "https://www.inspon-app.com/photoupload/test.php?name=" +
+            fileName +
+            "&ext=" +
+            extension +
+            "&original=" +
+            originalFile
+        );
+      }
+
+      const initDownload = async () => {
+        var url = new URL(decodeURIComponent(window.location.href).replace(" ", "").replace(/&amp;/g, "&").replace(/#/g, ""));
+
+        // if (url.searchParams.get("v") === null){
+        //       window.location.href =
+        //       window.location.href + "&v=" + (Math.random() * 10000000).toFixed(0);
+        // }
+        fileName = url.searchParams.get("ph_image");
+        originalFile = url.searchParams.get("ph_name").replace(/_/g, "") || url.searchParams.get("ph_name");
+        extension = url.searchParams.get("extension").split("=").join("");
+        var imageFiles = [
+          "png",
+          "jpg",
+          "jpeg",
+          "gif",
+          "tiff",
+          "svg",
+          "tif",
+          "pic",
+        ];
+        var files = [
+          "doc",
+          "docx",
+          "dot",
+          "dotx",
+          "docm",
+          "doc",
+          "xlsx",
+          "xlsm",
+          "csv",
+          "xls",
+          "ppt",
+        ];
+
+        let previewImage;
+
+        let fileURL = await getFileURL(fileName, extension);
+
+        if (imageFiles.includes(extension)) {
+          previewImage = fileURL;
+        } else {
+          if (
+            extension === "xlsx" ||
+            extension === "xlsm" ||
+            extension === "xls" ||
+            extension === "csv"
+          ) {
+            previewImage =
+              "https://photoupload.inspon-cloud.com/photoupload/img/ICONS/excel.png";
+          } else if (extension === "pdf") {
+            previewImage =
+              "https://photoupload.inspon-cloud.com/photoupload/img/ICONS/file.png";
+          } else if (extension === "ppt" || extension === "pptx") {
+            previewImage =
+              "https://photoupload.inspon-cloud.com/photoupload/img/ICONS/powerpoint.png";
+          } else if (
+            extension === "doc" ||
+            extension === "docx" ||
+            extension === "docm" ||
+            extension === "dot" ||
+            extension === "dotx"
+          ) {
+            previewImage =
+              "https://photoupload.inspon-cloud.com/photoupload/img/ICONS/word.png";
+          } else {
+            previewImage =
+              "https://dummyimage.com/100x100/bfbfbf/ffffff.png&text=." +
+              extension.toUpperCase();
+          }
+        }
+
+        var title = url.searchParams.get("ph_name").replace(/_/g, "") || url.searchParams.get("ph_name");
+
+        if (extension === "jpeg" || extension === "JPEG") {
+          fetch(
+            "https://inspon-app.com/photoupload_file/check_image?file=" +
+              fileName +
+              "&ext=jpg"
+          )
+            .then((resp) => resp.json())
+            .then((result) => {
+              if (result.success) {
+                document.querySelector("#previewImage").src =
+                  "https://inspon-app.com/photoupload/files/" +
+                  fileName +
+                  ".jpg";
+                extension = "jpg";
+              } else {
+                document.querySelector("#previewImage").src = previewImage;
+              }
+            })
+            .catch((err) => {
+              document.querySelector("#previewImage").src = previewImage;
+            });
+        } else {
+          document.querySelector("#previewImage").src = previewImage;
+        }
+
+        document.querySelector("title").innerHTML = title;
+        document.querySelector("#filename").innerHTML = title;
+        document.querySelector("#previewImage").style.display = "block";
+        document.querySelector("#filename").style.display = "block";
+
+        if(window.location.href.includes("/border_radius/100p")){
+            document.querySelector("#previewImage").style.borderRadius = "100%";
+        }
+
+        if(extension.toLowerCase().trim() === "png"){
+            document.querySelector("#previewImage").style.background = "url('https://inspon-app.com/photoupload/img/transparent.png')";
+        }
+
+        check_file_in_dropbox(fileName);
+
+      };
+
+      initDownload();
+    </script>
+
+  </body>
+</html>
