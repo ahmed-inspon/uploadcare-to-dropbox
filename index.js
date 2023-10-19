@@ -101,6 +101,10 @@ app.post('/webhook',async(req,res)=>{
 })
 
 
+app.get('/alternate_link',async(req,res)=>{
+ return res.sendFile(join(__dirname, '/loading_page.html'));
+})
+
 app.get('/generate_share_link',async(req,res)=>{
   let {id} = req.query;
   let dbx = new Dropbox({ accessToken: await get_refresh_token()});
