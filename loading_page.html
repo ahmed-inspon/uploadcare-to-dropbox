@@ -45,7 +45,8 @@
       try {
         const searchParams = new URLSearchParams(window.location.search);
         const id = searchParams.get('id');
-        const base_url = "http://localhost:7000/";
+        // const base_url = "http://localhost:7000/";
+        const base_url = "https://variantapp.inspon-cloud.com/";
         const request = await fetch(base_url+"generate_share_link?id="+id,{headers:{accept:"application/json"}});
         const response = await request.json();
         if(response.link){
