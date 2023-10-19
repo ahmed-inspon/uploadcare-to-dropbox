@@ -100,6 +100,37 @@ app.post('/webhook',async(req,res)=>{
     res.json({success:true,data})
 })
 
+
+app.get('/generate_share_link',async(req,res)=>{
+  let {id} = req.query;
+  let dbx = new Dropbox({ accessToken: await get_refresh_token()});
+  let search_file = dbx.filesSearchV2({ "query":id ,
+  "options": {
+      "max_results":1
+  }}).then(({result})=>{
+    
+    let matches = result?.matches?.[0];
+    if(matches){
+      let path = matches?.metadata?.metadata?.path_lower;
+      if(path){
+        dbx.sharingCreateSharedLinkWithSettings({
+          path:path
+        }).then((resp)=>{
+          return res.json({id,link:resp?.result?.url});
+        }).catch((err)=>{
+            if(err?.error?.error?.shared_link_already_exists)
+            {
+              return res.json({id,link:err?.error?.error?.shared_link_already_exists?.metadata?.url});
+            }
+            return res.status(400).json({message:"id does not exist"});
+        })
+      }
+    }
+  }).catch((err)=>{
+    return res.status(400).json({message:"id does not exist"});
+  })
+})
+
 app.listen(7000,()=>{
     console.log("server started");    
 })
