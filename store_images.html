@@ -61,8 +61,8 @@
     console.log("window",window.location.href);
     let current_page = 1;
     const fetch_data = async (current_page_) =>{
-        const base_url = "http://localhost:7000/";
-        // const base_url = "https://variantapp.inspon-cloud.com/";
+        // const base_url = "http://localhost:7000/";
+        const base_url = "https://variantapp.inspon-cloud.com/";
         const request = await fetch(base_url+"get_store_images?page="+current_page_,{headers:{accept:"application/json"}});
         const response = await request.json();
         const {data,total_pages} = response;
