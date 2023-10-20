@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Loading Page</title>
+  <!-- Add Bootstrap CSS -->
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+  <style>
+    /* Center the content vertically and horizontally */
+    .loading-container {
+      display: flex;
+      justify-content: center;
+      flex-direction: column;
+      align-items: center;
+      height: 100vh;
+    }
+    /* Style the text */
+    .loading-text {
+      margin-top: 2rem;
+      text-align: center;
+    }
+    th,td{
+       padding:6px 12px;
+       border:1px solid black; 
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="loading-container">
+      <!-- Bootstrap Spinner -->
+      <table>
+        <thead>
+            <tr>
+                <th>Date</th>
+                <th>Name</th>
+                <th>Dropbox link</th>
+                <th>Wasabi link</th>
+            </tr>
+        </thead>
+        <tbody id="output">
+
+        </tbody>
+        <tfoot>
+            <tr>
+                <td><button onClick="previous_page()">Previous</button></td>
+                <td colspan="2" id="current_page"></td>
+                <td><button onClick="next_page()">Next</button></td>
+            </tr>
+        </tfoot>
+      </table>
+    </div>
+    
+  </div>
+
+  <!-- Add Bootstrap JS and jQuery (required for Bootstrap) -->
+  <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.5.2/dist/js/bootstrap.bundle.min.js"></script>
+  <script>
+    console.log("window",window.location.href);
+    let current_page = 1;
+    const fetch_data = async (current_page_) =>{
+        const base_url = "http://localhost:7000/";
+        // const base_url = "https://variantapp.inspon-cloud.com/";
+        const request = await fetch(base_url+"get_store_images?page="+current_page_,{headers:{accept:"application/json"}});
+        const response = await request.json();
+        const {data,total_pages} = response;
+        if(data && data.length){
+            document.querySelector('#output').innerHTML = ``;
+            data.forEach((d)=>{
+                document.querySelector('#output').innerHTML += `<tr>
+                    <td>${d.date}</td>
+                    <td>${d.id}</td>
+                    <td><a href="${d.dropbox_link}" target="_blank">[Dropbox]</a></td>
+                    <td><a href="${d.wasabi_link}" target="_blank">[Wasabi]</a></td>
+                    </tr>`
+            });
+        }
+        document.querySelector('#current_page').innerHTML = `${current_page_}/${total_pages}`;
+    }
+    const init = async () =>{
+      try {
+
+
+        document.querySelector('#output').innerHTML = `<tr><th colspan="4">Fetching data from server ...</th></tr>`;
+        const searchParams = new URLSearchParams(window.location.search);
+        const page = searchParams.get('page');
+        current_page = page? page : 1;
+        fetch_data(current_page);
+        console.log("response",response);
+      } catch (error) {
+        console.error(error)
+      }
+    }
+    //onClick="redirect_to_dropbox('${d.id}')"
+    const next_page = () =>{
+        current_page++
+        document.querySelector('#output').innerHTML = `<tr><th colspan="4">Fetching data from server ...</th></tr>`;
+        fetch_data(current_page);
+    }
+    const previous_page = () =>{
+        current_page--
+        document.querySelector('#output').innerHTML = `<tr><th colspan="4">Fetching data from server ...</th></tr>`;
+        fetch_data(current_page);
+    }
+    init();
+  </script>
+</body>
+</html>

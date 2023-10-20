@@ -3,6 +3,7 @@ const bodyparser = require('body-parser');
 var Dropbox = require('dropbox').Dropbox;
 const axios = require('axios');
 const {writeFileSync,createReadStream,createWriteStream,readFileSync,unlinkSync, existsSync} = require('fs');
+const mongoose = require('mongoose');
 const { join } = require('path');
 const dotenv = require('dotenv');
 const FormData = require('form-data');
@@ -10,6 +11,8 @@ const sqlite3 = require('sqlite3').verbose();
 const {CronJob} = require('cron');
 const cliProgress = require('cli-progress');
 var cors = require('cors')
+
+
 
 let db = new sqlite3.Database('./file.db', (err) => {
   if (err) {
@@ -20,8 +23,38 @@ let db = new sqlite3.Database('./file.db', (err) => {
 db.serialize(() => {
   db.run("CREATE TABLE IF NOT EXISTS files (id INTEGER PRIMARY KEY, name TEXT ,size TEXT,url TEXT, created_at TEXT)");
 });
+let model = null;
+mongoose.connect('mongodb://root:xu19YQACy0D3@159.203.105.34:27017/photoupload?authSource=admin')
+  .then((con) => {
+    console.log('Connected!')
+  const image_record_schema = new mongoose.Schema({
 
-
+    id:{
+        type:Number
+    },
+    image_name:{
+        type:String
+    },
+    store_name:{
+        type:String
+    },
+    image_size:{
+        type: Number
+    },
+    created:{
+        type:Date,
+        default:Date.now
+    },
+    record:{
+        type:Boolean
+    },
+    plan:{
+        type:Number
+    }
+  })
+  
+  model = con.model("image_record", image_record_schema);
+});
 
 dotenv.config();
 const app = express();
@@ -107,12 +140,58 @@ app.get('/testing_download',async(req,res)=>{
   return res.sendFile(join(__dirname, '/testing_download.html'));
 })
 
+const search_file_sync = (dbx,id) =>{
+  return new Promise((res,rej)=>{
+    dbx.filesSearchV2({ "query":id ,
+    "options": {
+        "max_results":1
+    }}).then(({result})=>{
+      let matches = result?.matches?.[0];
+      if(matches){
+       return res(matches);
+      }
+      return res(null)
+    }).catch((err)=>{
+      res(null)
+    });
+  })
+}
+
+app.get('/get_store_images', async (req,res)=>{
+  let {page} = req.query;
+  if(!page){
+    page = 1;
+  }
+  let total = await model.count({store_name:"mudds-designs-crafts.myshopify.com"});
+  console.log((page)*10)
+  let records = await model.find({store_name:"mudds-designs-crafts.myshopify.com"}).skip((page)*10).limit(10).sort({'created':-1});
+  let dbx = new Dropbox({ accessToken: await get_refresh_token()});
+  let data = [];
+  for(let i = 0 ; i < records.length ; i++){
+    let id = records[i].image_name;
+    let search_file = await search_file_sync(dbx,id);
+    console.log("res",search_file);
+    if(search_file){
+      let dropbox_link = `https://variantapp.inspon-cloud.com/alternate_link?id=${id}`
+      let wasabi_link = `https://uploadly-files.com/${search_file?.metadata?.metadata?.name}`;
+      data.push({"id":id,date:records[i].created,dropbox_link,wasabi_link})
+    }
+  }
+  let total_pages = Math.ceil(total/10);
+  let current_page = page
+  return res.json({total:total,total_pages,current_page,data});
+})
+
+app.get('/store_images',async(req,res)=>{
+  return res.sendFile(join(__dirname, '/store_images.html'));
+})
+
 app.get('/check_for_dropbox',async(req,res)=>{
   let {id} = req.query;
   let dbx = new Dropbox({ accessToken: await get_refresh_token()});
   let search_file = dbx.filesSearchV2({ "query":id ,
   "options": {
-      "max_results":1
+      "max_results":2
   }}).then(({result})=>{
     let matches = result?.matches?.[0];
     if(matches){
