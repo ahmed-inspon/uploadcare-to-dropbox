@@ -500,7 +500,7 @@ const upload_big_files = async (fileContent, fileSize, file_name, id) => {
 
 const delete_id = (id) =>{
   db.run('DELETE FROM files WHERE id = ?', [id], () => {
-    console.log(file_name, "File deleted at", new Date());
+    console.log("File deleted at", new Date());
   });
 }
 
