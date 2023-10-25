@@ -504,7 +504,7 @@ const delete_id = (id) =>{
   });
 }
 
-delete_id(2);
+// delete_id(2);
 
 const generate_share_link = async (path) =>{
   let dbx = new Dropbox({ accessToken: await get_refresh_token() });
