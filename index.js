@@ -119,12 +119,14 @@ app.get("/",async(req,res)=>{
 app.post('/webhook',async(req,res)=>{
     let {data,file} = req.body;
     let file_uuid = data.uuid;
+    let created_at = new Date(data.datetime_uploaded).getTime();
     let ext = data.original_filename.split('.')[data.original_filename.split(".").length-1];
     let file_name = file_uuid+"."+ext;
-    db.run('INSERT INTO files (name,url,size,created_at) VALUES (?,?,?,?)', [file_name,file,data.size,Date.now()], (err) => {
+    db.run('INSERT INTO files (name,url,size,created_at) VALUES (?,?,?,?)', [file_name,file,data.size,created_at], (err) => {
       if (err) {
         console.error(err.message);
       } else {
+        console.log('File name inserted into the database:',file_name,created_at);
         // console.log('File name inserted into the database:', file_name);
       }
     });
