@@ -204,7 +204,21 @@ app.get('/check_for_dropbox',async(req,res)=>{
     return res.status(400).json({message:"id does not exist"});
   });
 })
-
+app.get('/last_status',async(req,res)=>{
+  try {
+    db.all('SELECT id,name,url,size,created_at FROM files ORDER BY created_at DESC LIMIT 1', async (err,data) => {
+      console.log("data",data,err);
+      if(err)
+      {
+        return res.status(400).json({success:false,errors:err});
+      }
+      return res.status(200).json({success:true,data:data.length ? data[0] : null});
+    });
+  } catch (error) {
+    console.error(error);
+   return res.status(400).json({success:false,errors:error});
+  }
+})
 app.get('/generate_share_link',async(req,res)=>{
   let {id} = req.query;
   let dbx = new Dropbox({ accessToken: await get_refresh_token()});
