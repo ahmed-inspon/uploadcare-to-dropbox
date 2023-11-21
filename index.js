@@ -188,16 +188,28 @@ const search_file_sync = (dbx,id) =>{
   })
 }
 
-const download_from_storage_server = async (file_id,file_name) =>{
+const download_from_storage_server = async (file_id,file_name,url,failed_data) =>{
   try {
-    console.log("downloading from storage server",file_name);
-    const fileResponse = await axios({
-      url: "http://188.68.37.219:3003/"+file_name,
-      method: "GET",
-      responseType: "arraybuffer",
-    });
-    console.log("downloaded file",fileResponse.data.length);
-    writeFileSync(join(process.cwd(),'storage_server',file_name),Buffer.from(fileResponse.data),{encoding:'binary'});
+    console.log("failed_Data---------->",failed_data);
+    if(!failed_data || !failed_data.length || (failed_data.length && failed_data[0].retries < 5)){
+      const fileResponse = await axios({
+        url: "http://188.68.37.219:3003/"+file_name,
+        method: "GET",
+        responseType: "arraybuffer",
+      });
+      console.log("downloaded file from storage server",fileResponse.data.length);
+      writeFileSync(join(process.cwd(),'temp',file_name),Buffer.from(fileResponse.data),{encoding:'binary'});
+    }
+    else{
+      const fileResponse = await axios({
+        url: url,
+        method: "GET",
+        responseType: "arraybuffer",
+      });
+      console.log("downloaded file from uploadcare",fileResponse.data.length);
+      writeFileSync(join(process.cwd(),'temp',file_name),Buffer.from(fileResponse.data),{encoding:'binary'});
+    }
+    
   } catch (error) {
     update_failed_table(file_id);
     console.error("storage server download",error)
@@ -376,17 +388,17 @@ const cronExecution = () =>{
             // console.log('small Name:', file_name,url,size);
             if(!existsSync(join(process.cwd(),'temp',file_name))){
               try {
-                download_from_storage_server(file_id,file_name);
-                const fileResponse = await axios({
-                  url: url,
-                  method: "GET",
-                  responseType: "arraybuffer",
-                });
-                writeFileSync(join(process.cwd(),'temp',file_name),Buffer.from(fileResponse.data),{encoding:'binary'});
+                await download_from_storage_server(file_id,file_name,url,failed_data);
+                // const fileResponse = await axios({
+                //   url: url,
+                //   method: "GET",
+                //   responseType: "arraybuffer",
+                // });
+                // writeFileSync(join(process.cwd(),'temp',file_name),Buffer.from(fileResponse.data),{encoding:'binary'});
               } catch (error) {
                 console.error("file does not exist")
                 console.log(`${file_name} Uploaded (${(i+1)}/${rows.length})`)
-                update_failed_table(row.id);
+                // update_failed_table(row.id);
                 continue;
               }
             }
