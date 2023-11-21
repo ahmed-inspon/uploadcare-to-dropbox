@@ -11,7 +11,7 @@ const sqlite3 = require('sqlite3').verbose();
 const {CronJob} = require('cron');
 var cors = require('cors')
 
-function runStatement(db, sql,args) {
+function runStatement(db, sql,args=null) {
   return new Promise((resolve, reject) => {
       db.run(sql,args, function (err) {
           if (err) {
@@ -23,15 +23,27 @@ function runStatement(db, sql,args) {
   });
 }
 
+function selectStatement(db, sql,args=null) {
+  return new Promise((resolve, reject) => {
+      db.all(sql,args, function (err,rows) {
+          if (err) {
+              reject(err);
+          } else {
+              resolve(rows); // 'this' is the statement object for the completed statement
+          }
+      });
+  });
+}
+
 let db = new sqlite3.Database('./file.db', (err) => {
   if (err) {
     console.error(err.message);
   }
   console.log('Connected to database.');
 });
-db.serialize(() => {
-  db.run("CREATE TABLE IF NOT EXISTS files (id INTEGER PRIMARY KEY, name TEXT ,size TEXT,url TEXT, created_at TEXT)");
-  db.run("CREATE TABLE IF NOT EXISTS failed_files (id INTEGER PRIMARY KEY, failed_id INTEGER ,retries INTEGER)");
+db.serialize(async () => {
+  await runStatement(db,"CREATE TABLE IF NOT EXISTS files (id INTEGER PRIMARY KEY, name TEXT ,size TEXT,url TEXT, created_at TEXT)");
+  await runStatement(db,"CREATE TABLE IF NOT EXISTS failed_files (id INTEGER PRIMARY KEY, failed_id INTEGER ,retries INTEGER)")
 });
 let model = null;
 mongoose.connect('mongodb://root:xu19YQACy0D3@159.203.105.34:27017/photoupload?authSource=admin')
@@ -352,6 +364,8 @@ const cronExecution = () =>{
             const file_name = row.name;
             const url = row.url;
             const size = row.size;
+            const failed_data = await selectStatement(db,"SELECT id,failed_id,retries FROM failed_files WHERE failed_id = ?",[file_id]);
+            console.log("failed_data------------------->",failed_data);
             if(size > 100000000){
               // console.log("big file----",file_name);
               await backup_big_files(row);
@@ -383,9 +397,7 @@ const cronExecution = () =>{
                 // console.log(file_name," File uploaded at",new Date())
                 try{
                   unlinkSync(join(process.cwd(),'temp',file_name));
-                  db.run('DELETE FROM files WHERE id = ?',[row.id],()=>{
-                    // console.log(file_name," File deleted at",new Date())
-                  })
+                  runStatement(db,'DELETE FROM files WHERE id = ?',[row.id])
                   // generate_share_link("/"+path+"/"+file_name)
                   resolve()
                 }
@@ -481,12 +493,8 @@ const upload_big_files = async (fileContent, fileSize, file_name, id) => {
             // console.log("File already exists in Dropbox");
             try{
               unlinkSync(join(process.cwd(), 'temp', file_name))
-              new Promise((resolve, reject) => {
-                db.run('DELETE FROM files WHERE id = ?', [id], () => {
-                  console.log(file_name, "File deleted at", new Date());
-                  resolve();
-                });
-              });
+              await runStatement(db,'DELETE FROM files WHERE id = ?', [id]);
+              console.log(file_name, "File deleted at", new Date());
             }
             catch(err)
             {
@@ -555,15 +563,10 @@ const upload_big_files = async (fileContent, fileSize, file_name, id) => {
 
         uploadChunks()
           .then(() => finishUpload())
-          .then(() => {
+          .then(async () => {
             // console.log(file_name, "File uploaded at", new Date());
             unlinkSync(join(process.cwd(), 'temp', file_name))
-            return new Promise((resolve, reject) => {
-              db.run('DELETE FROM files WHERE id = ?', [id], () => {
-                // console.log(file_name, "File deleted at", new Date());
-                resolve();
-              });
-            });
+            return await runStatement(db,'DELETE FROM files WHERE id = ?', [id]);
           })
           .then(() => {
             resolve('File upload and cleanup complete');
