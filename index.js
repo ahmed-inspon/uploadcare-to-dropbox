@@ -375,6 +375,11 @@ const cronExecution = () =>{
             const row = rows[i];
             const file_id = row.id;
             const file_name = row.name;
+            if(file_name?.split(".")?.[1]?.split(" ")?.length)
+            {
+              console.log("error file-------------------->",file_name);
+              continue;
+            }
             const url = row.url;
             const size = row.size;
             const failed_data = await selectStatement(db,"SELECT id,failed_id,retries FROM failed_files WHERE failed_id = ?",[file_id]);
