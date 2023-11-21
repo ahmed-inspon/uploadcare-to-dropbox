@@ -375,7 +375,7 @@ const cronExecution = () =>{
             const row = rows[i];
             const file_id = row.id;
             const file_name = row.name;
-            if(file_name?.split(".")?.[1]?.split(" ")?.length)
+            if(file_name?.split(".")?.[1]?.split(" ")?.length > 1)
             {
               console.log("error file-------------------->",file_name);
               continue;
