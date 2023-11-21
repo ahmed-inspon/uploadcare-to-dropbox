@@ -386,9 +386,11 @@ const cronExecution = () =>{
               continue
             }
             // console.log('small Name:', file_name,url,size);
+            let file_content = null;
             if(!existsSync(join(process.cwd(),'temp',file_name))){
               try {
                 await download_from_storage_server(file_id,file_name,url,failed_data);
+                file_content = readFileSync(join(process.cwd(),'temp',file_name));
                 // const fileResponse = await axios({
                 //   url: url,
                 //   method: "GET",
@@ -402,7 +404,6 @@ const cronExecution = () =>{
                 continue;
               }
             }
-            let file_content = readFileSync(join(process.cwd(),'temp',file_name));
             let today = new Date();
             let path = today.getFullYear()+"/"+(today.getMonth()+1);
             await new Promise((resolve,rej)=>{
