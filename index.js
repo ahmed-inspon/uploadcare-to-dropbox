@@ -9,10 +9,19 @@ const dotenv = require('dotenv');
 const FormData = require('form-data');
 const sqlite3 = require('sqlite3').verbose();
 const {CronJob} = require('cron');
-const cliProgress = require('cli-progress');
 var cors = require('cors')
 
-
+function runStatement(db, sql,args) {
+  return new Promise((resolve, reject) => {
+      db.run(sql,args, function (err) {
+          if (err) {
+              reject(err);
+          } else {
+              resolve(this); // 'this' is the statement object for the completed statement
+          }
+      });
+  });
+}
 
 let db = new sqlite3.Database('./file.db', (err) => {
   if (err) {
@@ -123,14 +132,21 @@ app.post('/webhook',async(req,res)=>{
     let created_at = new Date(data.datetime_uploaded).getTime();
     let ext = data.original_filename.split('.')[data.original_filename.split(".").length-1];
     let file_name = file_uuid+"."+ext;
-    db.run('INSERT INTO files (name,url,size,created_at) VALUES (?,?,?,?)', [file_name,file,data.size,created_at], (err) => {
-      if (err) {
-        console.error(err.message);
-      } else {
-        console.log('File name inserted into the database:',file_name,created_at);
-        // console.log('File name inserted into the database:', file_name);
-      }
-    });
+    try {
+      await runStatement(db, "INSERT INTO files (name,url,size,created_at) VALUES (?,?,?,?)",[file_name,file,data.size,created_at]);
+      console.log('File name inserted into the database:',file_name,created_at);
+    } catch (error) {
+      console.error(error)
+    }
+
+    // db.run('INSERT INTO files (name,url,size,created_at) VALUES (?,?,?,?)', [file_name,file,data.size,created_at], (err) => {
+    //   if (err) {
+    //     console.error(err.message);
+    //   } else {
+    //     console.log('File name inserted into the database:',file_name,created_at);
+    //     // console.log('File name inserted into the database:', file_name);
+    //   }
+    // });
     res.json({success:true,data})
 })
 
@@ -160,7 +176,7 @@ const search_file_sync = (dbx,id) =>{
   })
 }
 
-const download_from_storage_server = async (file_name) =>{
+const download_from_storage_server = async (file_id,file_name) =>{
   try {
     console.log("downloading from storage server",file_name);
     const fileResponse = await axios({
@@ -171,6 +187,7 @@ const download_from_storage_server = async (file_name) =>{
     console.log("downloaded file",fileResponse.data.length);
     writeFileSync(join(process.cwd(),'storage_server',file_name),Buffer.from(fileResponse.data),{encoding:'binary'});
   } catch (error) {
+    update_failed_table(file_id);
     console.error("storage server download",error)
   }
 }
@@ -329,10 +346,9 @@ const cronExecution = () =>{
           console.log("Found ",rows.length," files for cronjob");
           console.log("Batch Started:",new Date());
           let dbx = new Dropbox({ accessToken: await get_refresh_token()});
-          const bar1 = new cliProgress.SingleBar({}, cliProgress.Presets.shades_classic);
-          bar1.start(rows.length, 0);
           for(let i=0;i < rows.length ; i++){
             const row = rows[i];
+            const file_id = row.id;
             const file_name = row.name;
             const url = row.url;
             const size = row.size;
@@ -340,13 +356,12 @@ const cronExecution = () =>{
               // console.log("big file----",file_name);
               await backup_big_files(row);
               console.log(`${file_name} Uploaded (${(i+1)}/${rows.length})`)
-              bar1.update((i+1));
               continue
             }
             // console.log('small Name:', file_name,url,size);
             if(!existsSync(join(process.cwd(),'temp',file_name))){
               try {
-                download_from_storage_server(file_name);
+                download_from_storage_server(file_id,file_name);
                 const fileResponse = await axios({
                   url: url,
                   method: "GET",
@@ -356,7 +371,6 @@ const cronExecution = () =>{
               } catch (error) {
                 console.error("file does not exist")
                 console.log(`${file_name} Uploaded (${(i+1)}/${rows.length})`)
-                bar1.update((i+1));
                 update_failed_table(row.id);
                 continue;
               }
@@ -385,15 +399,13 @@ const cronExecution = () =>{
               })
             })
             console.log(`${file_name} Uploaded (${(i+1)}/${rows.length})`)
-            bar1.update((i+1));
           }
-          bar1.stop();
           console.log("Batch Ended:",new Date());
           cron_running = false;
       }
     });
   } catch (error) {
-    console.error('error happened in cron')
+    console.error('error happened in cron',error)
     cron_running = false;
   }
 
