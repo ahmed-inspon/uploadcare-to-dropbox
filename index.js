@@ -378,6 +378,12 @@ const cronExecution = () =>{
             if(file_name?.split(".")?.[1]?.split(" ")?.length > 1)
             {
               console.log("error file-------------------->",file_name);
+              try {
+                unlinkSync(join(process.cwd(),'temp',file_name));
+                runStatement(db,'DELETE FROM files WHERE id = ?',[file_id])
+              } catch (error) {
+                console.error("error delting",error)
+              }
               continue;
             }
             const url = row.url;
