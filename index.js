@@ -212,7 +212,7 @@ const download_from_storage_server = async (file_id,file_name,url,failed_data) =
     
   } catch (error) {
     update_failed_table(file_id);
-    console.error("storage server download",error)
+    console.error("storage server download error")
   }
 }
 
