@@ -22,6 +22,7 @@ let db = new sqlite3.Database('./file.db', (err) => {
 });
 db.serialize(() => {
   db.run("CREATE TABLE IF NOT EXISTS files (id INTEGER PRIMARY KEY, name TEXT ,size TEXT,url TEXT, created_at TEXT)");
+  db.run("CREATE TABLE IF NOT EXISTS failed_files (id INTEGER PRIMARY KEY, failed_id INTEGER ,retries INTEGER)");
 });
 let model = null;
 mongoose.connect('mongodb://root:xu19YQACy0D3@159.203.105.34:27017/photoupload?authSource=admin')
@@ -159,6 +160,60 @@ const search_file_sync = (dbx,id) =>{
   })
 }
 
+const download_from_storage_server = async (file_name) =>{
+  try {
+    console.log("downloading from storage server",file_name);
+    const fileResponse = await axios({
+      url: "http://188.68.37.219:3003/"+file_name,
+      method: "GET",
+      responseType: "arraybuffer",
+    });
+    console.log("downloaded file",fileResponse.data.length);
+    writeFileSync(join(process.cwd(),'storage_server',file_name),Buffer.from(fileResponse.data),{encoding:'binary'});
+  } catch (error) {
+    console.error("storage server download",error)
+  }
+}
+
+const update_failed_table = async(file_id) =>{
+  try{
+    db.all('SELECT id,failed_id,retries FROM failed_files WHERE failed_id ='+file_id, async (err,rows) => {
+      if(err){
+        console.log("err1",err);
+        return;
+      }
+      if(rows && rows.length)
+      {
+        let retries = row[0].retries + 1;
+        db.run('UPDATE failed_files SET retries = ? WHERE id = ?',[retries,row[0].id],(err)=>{
+          if (err) {
+            console.error(err.message);
+          }
+          else{
+            console.log('FAILED DOWNLOAD :',file_id);
+          }
+        })
+        return;
+      }
+      else{
+        db.run('INSERT INTO failed_files (failed_id,retries) VALUES (?,?)',[file_id,1],(err) => {
+          if (err) {
+            console.error(err.message);
+          } else {
+            console.log('FAILED DOWNLOAD :',file_id);
+          }
+        })
+
+      }
+
+    })
+
+  }
+  catch(err)
+  {
+    console.log("failed error",err);
+  }
+}
 app.get('/get_store_images', async (req,res)=>{
   let {page} = req.query;
   if(!page){
@@ -291,6 +346,7 @@ const cronExecution = () =>{
             // console.log('small Name:', file_name,url,size);
             if(!existsSync(join(process.cwd(),'temp',file_name))){
               try {
+                download_from_storage_server(file_name);
                 const fileResponse = await axios({
                   url: url,
                   method: "GET",
@@ -301,6 +357,7 @@ const cronExecution = () =>{
                 console.error("file does not exist")
                 console.log(`${file_name} Uploaded (${(i+1)}/${rows.length})`)
                 bar1.update((i+1));
+                update_failed_table(row.id);
                 continue;
               }
             }
