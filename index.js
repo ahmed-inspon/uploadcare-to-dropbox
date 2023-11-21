@@ -214,6 +214,7 @@ const update_failed_table = async(file_id) =>{
       if(rows && rows.length)
       {
         let retries = row[0].retries + 1;
+        console.log("existing data",row[0]);
         db.run('UPDATE failed_files SET retries = ? WHERE id = ?',[retries,row[0].id],(err)=>{
           if (err) {
             console.error(err.message);
