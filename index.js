@@ -140,9 +140,9 @@ app.get("/",async(req,res)=>{
 })
 app.post('/webhook',async(req,res)=>{
     let {data,file} = req.body;
-    console.log("--------------");
-    console.log(JSON.stringify(req.body));
-    console.log("--------------");
+    // console.log("--------------");
+    // console.log(JSON.stringify(req.body));
+    // console.log("--------------");
     let file_uuid = data.uuid;
     let created_at = new Date(data.datetime_uploaded).getTime();
     let ext = data.original_filename.split('.')[data.original_filename.split(".").length-1];
