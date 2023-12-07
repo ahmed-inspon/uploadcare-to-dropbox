@@ -149,9 +149,9 @@ app.post('/webhook',async(req,res)=>{
     let file_name = file_uuid+"."+ext;
     try {
       await runStatement(db, "INSERT INTO files (name,url,size,created_at) VALUES (?,?,?,?)",[file_name,file,data.size,created_at]);
-      console.log('File name inserted into the database:',file_name,created_at);
+      // console.log('File name inserted into the database:',file_name,created_at);
     } catch (error) {
-      console.error(error)
+      // console.error(error)
     }
 
     // db.run('INSERT INTO files (name,url,size,created_at) VALUES (?,?,?,?)', [file_name,file,data.size,created_at], (err) => {
@@ -193,14 +193,14 @@ const search_file_sync = (dbx,id) =>{
 
 const download_from_storage_server = async (file_id,file_name,url,failed_data) =>{
   try {
-    console.log("failed_Data---------->",failed_data);
+    // console.log("failed_Data---------->",failed_data);
     if(!failed_data || !failed_data.length || (failed_data.length && failed_data[0].retries < 5)){
       const fileResponse = await axios({
         url: "http://188.68.37.219:3003/"+file_name,
         method: "GET",
         responseType: "arraybuffer",
       });
-      console.log("downloaded file from storage server",fileResponse.data.length);
+      // console.log("downloaded file from storage server",fileResponse.data.length);
       writeFileSync(join(process.cwd(),'temp',file_name),Buffer.from(fileResponse.data),{encoding:'binary'});
     }
     else{
@@ -209,7 +209,7 @@ const download_from_storage_server = async (file_id,file_name,url,failed_data) =
         method: "GET",
         responseType: "arraybuffer",
       });
-      console.log("downloaded file from uploadcare",fileResponse.data.length);
+      // console.log("downloaded file from uploadcare",fileResponse.data.length);
       writeFileSync(join(process.cwd(),'temp',file_name),Buffer.from(fileResponse.data),{encoding:'binary'});
     }
     
@@ -223,19 +223,19 @@ const update_failed_table = async(file_id) =>{
   try{
     db.all('SELECT id,failed_id,retries FROM failed_files WHERE failed_id ='+file_id, async (err,rows) => {
       if(err){
-        console.log("err1",err);
+        // console.log("err1",err);
         return;
       }
       if(rows && rows.length)
       {
         let retries = rows[0].retries + 1;
-        console.log("existing data",rows[0]);
+        // console.log("existing data",rows[0]);
         db.run('UPDATE failed_files SET retries = ? WHERE id = ?',[retries,rows[0].id],(err)=>{
           if (err) {
-            console.error(err.message);
+            // console.error(err.message);
           }
           else{
-            console.log('FAILED DOWNLOAD :',file_id);
+            // console.log('FAILED DOWNLOAD :',file_id);
           }
         })
         return;
@@ -245,7 +245,7 @@ const update_failed_table = async(file_id) =>{
           if (err) {
             console.error(err.message);
           } else {
-            console.log('FAILED DOWNLOAD :',file_id);
+            // console.log('FAILED DOWNLOAD :',file_id);
           }
         })
 
@@ -256,7 +256,7 @@ const update_failed_table = async(file_id) =>{
   }
   catch(err)
   {
-    console.log("failed error",err);
+    // console.log("failed error",err);
   }
 }
 app.get('/get_store_images', async (req,res)=>{
@@ -265,14 +265,14 @@ app.get('/get_store_images', async (req,res)=>{
     page = 1;
   }
   let total = await model.count({store_name:"mudds-designs-crafts.myshopify.com"});
-  console.log((page)*10)
+  // console.log((page)*10)
   let records = await model.find({store_name:"mudds-designs-crafts.myshopify.com"}).skip((page)*10).limit(10).sort({'created':-1});
   let dbx = new Dropbox({ accessToken: await get_refresh_token()});
   let data = [];
   for(let i = 0 ; i < records.length ; i++){
     let id = records[i].image_name;
     let search_file = await search_file_sync(dbx,id);
-    console.log("res",search_file);
+    // console.log("res",search_file);
     if(search_file){
       let dropbox_link = `https://variantapp.inspon-cloud.com/alternate_link?id=${id}`
       let wasabi_link = `https://uploadly-files.com/${search_file?.metadata?.metadata?.name}`;
@@ -307,7 +307,7 @@ app.get('/check_for_dropbox',async(req,res)=>{
 app.get('/last_status',async(req,res)=>{
   try {
     db.all('SELECT id,name,url,size,created_at FROM files ORDER BY created_at DESC LIMIT 1', async (err,data) => {
-      console.log("data",data,err);
+      // console.log("data",data,err);
       if(err)
       {
         return res.status(400).json({success:false,errors:err});
@@ -380,7 +380,7 @@ const cronExecution = () =>{
             const file_name = row.name;
             if(file_name?.split(".")?.[1]?.split(" ")?.length > 1)
             {
-              console.log("error file-------------------->",file_name);
+              // console.log("error file-------------------->",file_name);
               try {
                 unlinkSync(join(process.cwd(),'temp',file_name));
                 runStatement(db,'DELETE FROM files WHERE id = ?',[file_id])
@@ -392,11 +392,11 @@ const cronExecution = () =>{
             const url = row.url;
             const size = row.size;
             const failed_data = await selectStatement(db,"SELECT id,failed_id,retries FROM failed_files WHERE failed_id = ?",[file_id]);
-            console.log("failed_data------------------->",failed_data);
+            // console.log("failed_data------------------->",failed_data);
             if(size > 100000000){
               // console.log("big file----",file_name);
               await backup_big_files(row);
-              console.log(`${file_name} Uploaded (${(i+1)}/${rows.length})`)
+              // console.log(`${file_name} Uploaded (${(i+1)}/${rows.length})`)
               continue
             }
             // console.log('small Name:', file_name,url,size);
@@ -412,8 +412,8 @@ const cronExecution = () =>{
                 // });
                 // writeFileSync(join(process.cwd(),'temp',file_name),Buffer.from(fileResponse.data),{encoding:'binary'});
               } catch (error) {
-                console.error("file does not exist")
-                console.log(`${file_name} Uploaded (${(i+1)}/${rows.length})`)
+                // console.error("file does not exist")
+                // console.log(`${file_name} Uploaded (${(i+1)}/${rows.length})`)
                 // update_failed_table(row.id);
                 continue;
               }
@@ -438,7 +438,7 @@ const cronExecution = () =>{
                 resolve()
               })
             })
-            console.log(`${file_name} Uploaded (${(i+1)}/${rows.length})`)
+            // console.log(`${file_name} Uploaded (${(i+1)}/${rows.length})`)
           }
           console.log("Batch Ended:",new Date());
           cron_running = false;
@@ -467,7 +467,7 @@ const file_download = async (file_name, url) => {
     });
   } catch (error) {
     if (error.response && error.response.status === 404) {
-      console.log('Fetching through uploadly------------------------');
+      // console.log('Fetching through uploadly------------------------');
       try {
         const response = await axios.get(`https://uploadly-files.com/${file_name}`, { responseType: 'stream' });
 
@@ -501,10 +501,10 @@ const backup_big_files = async(row) =>{
     }
     const fileContent = readFileSync(join(process.cwd(),'temp',file_name));
     const fileSize = fileContent.length;
-    console.log(await upload_big_files(fileContent,fileSize,file_name,id));
+    await upload_big_files(fileContent,fileSize,file_name,id)
   }
   catch(err){
-    console.log("err",err);
+    // console.log("err",err);
   }
 }
 const upload_big_files = async (fileContent, fileSize, file_name, id) => {
@@ -522,7 +522,7 @@ const upload_big_files = async (fileContent, fileSize, file_name, id) => {
             try{
               unlinkSync(join(process.cwd(), 'temp', file_name))
               await runStatement(db,'DELETE FROM files WHERE id = ?', [id]);
-              console.log(file_name, "File deleted at", new Date());
+              // console.log(file_name, "File deleted at", new Date());
             }
             catch(err)
             {
@@ -616,7 +616,7 @@ const upload_big_files = async (fileContent, fileSize, file_name, id) => {
 
 const delete_id = (id) =>{
   db.run('DELETE FROM files WHERE id = ?', [id], () => {
-    console.log("File deleted at", new Date());
+    // console.log("File deleted at", new Date());
   });
 }
 
@@ -627,7 +627,7 @@ const generate_share_link = async (path) =>{
   dbx.sharingCreateSharedLinkWithSettings({
     path:path
   }).then((resp)=>{
-    console.log("resp",resp);
+    // console.log("resp",resp);
   })
 }
 
