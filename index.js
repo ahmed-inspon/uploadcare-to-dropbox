@@ -109,7 +109,7 @@ const get_refresh_token = async ()=>{
     }
   }
   catch (error) {
-    console.error("refresh token error",error);
+    // console.error("refresh token error",error);
     return null
   }
 }
@@ -215,7 +215,7 @@ const download_from_storage_server = async (file_id,file_name,url,failed_data) =
     
   } catch (error) {
     update_failed_table(file_id);
-    console.error("storage server download error")
+    // console.error("storage server download error")
   }
 }
 
@@ -243,7 +243,7 @@ const update_failed_table = async(file_id) =>{
       else{
         db.run('INSERT INTO failed_files (failed_id,retries) VALUES (?,?)',[file_id,1],(err) => {
           if (err) {
-            console.error(err.message);
+            // console.error(err.message);
           } else {
             // console.log('FAILED DOWNLOAD :',file_id);
           }
@@ -315,7 +315,7 @@ app.get('/last_status',async(req,res)=>{
       return res.status(200).json({success:true,data:data.length ? data[0] : null});
     });
   } catch (error) {
-    console.error(error);
+    // console.error(error);
    return res.status(400).json({success:false,errors:error});
   }
 })
@@ -364,7 +364,7 @@ const cronExecution = () =>{
     cron_running = true;
     db.all('SELECT id,name,url,size,created_at FROM files LIMIT 300', async (err, rows) => {
       if (err) {
-        console.error(err.message);
+        // console.error(err.message);
         cron_running = false;
       } else {
           if(!rows.length){            
@@ -385,7 +385,7 @@ const cronExecution = () =>{
                 unlinkSync(join(process.cwd(),'temp',file_name));
                 runStatement(db,'DELETE FROM files WHERE id = ?',[file_id])
               } catch (error) {
-                console.error("error delting",error)
+                // console.error("error delting",error)
               }
               continue;
             }
@@ -445,7 +445,7 @@ const cronExecution = () =>{
       }
     });
   } catch (error) {
-    console.error('error happened in cron',error)
+    // console.error('error happened in cron',error)
     cron_running = false;
   }
 
@@ -481,9 +481,9 @@ const file_download = async (file_name, url) => {
         });
       } catch (error) {
         if (error.response && error.response.status === 400) {
-          console.error('Big file error:', error.response.data);
+          // console.error('Big file error:', error.response.data);
         } else {
-          console.error('Error fetching through uploadly:', error);
+          // console.error('Error fetching through uploadly:', error);
         }
       }
     }
@@ -600,14 +600,14 @@ const upload_big_files = async (fileContent, fileSize, file_name, id) => {
             resolve('File upload and cleanup complete');
           })
           .catch((error) => {
-            console.error('Error uploading file:', error);
+            // console.error('Error uploading file:', error);
             reject(error);
           });
       };
       // Check if the file exists and proceed with the upload
       checkFileExists();
     } catch (err) {
-      console.error('Error uploading the file:', err);
+      // console.error('Error uploading the file:', err);
       reject(err);
     }
   });
